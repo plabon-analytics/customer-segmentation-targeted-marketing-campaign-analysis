@@ -396,7 +396,7 @@ support the recommended campaign budget priority.
 
 **1. Clone the repository**
 ```bash
-git clone https://github.com/plabon-analytics/customer-segmentation-analysis.git
+git clone https://github.com/plabon-analytics/customer-segmentation-targeted-marketing-campaign-analysis.git
 cd customer-segmentation-analysis
 ```
 
