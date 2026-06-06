@@ -131,7 +131,7 @@ customer-segmentation-analysis/
 │       ├── Silhouette Score — Cluster Quality.png
 │       ├── Customer Segments — PCA Visualization.png
 │       ├── Number of Customers Per Cluster.png
-│       ├── Campaign Response Rate Per Segment (%).png
+│       ├── campaign_response_rate_per_segment.png
 │       └── Budget Allocation Evidence.png
 │
 ├── requirements.txt
@@ -224,7 +224,7 @@ If the same campaign approach is used for both groups, budget is being
 applied to customers with roughly a 10x difference in response rate and
 a 10x difference in average spend.
 
-![Campaign Response Rate Per Segment](<outputs/charts/Campaign Response Rate Per Segment (%).png>)
+![Campaign Response Rate Per Segment](outputs/charts/campaign_response_rate_per_segment.png)
 
 **Finding 4 — The Second Most Valuable Segment Is Completely Unreachable**
 High Value Disengaged customers spend $934 on average and make 21 purchases
