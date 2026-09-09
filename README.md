@@ -200,7 +200,7 @@ behavioral scores. PCA was used only for visualization, reducing the
 cluster features into two dimensions so the segment separation can be
 inspected visually.
 
-![Customer Segments PCA Visualization](outputs/charts/customer_segments_pca_visualization.png)
+![Customer Segments PCA Visualization](<outputs/charts/Customer Segments — PCA Visualization.png>)
 
 ---
 
@@ -224,7 +224,7 @@ The same campaign budget is currently spent on both groups equally —
 despite a 10x difference in average spend and a 35x difference in
 campaign response rate.
 
-![Campaign Response Rate Per Segment](outputs/charts/campaign_response_rate_per_segment.png)
+![Campaign Response Rate Per Segment (%)](<outputs/charts/Campaign Response Rate Per Segment (%).png>)
 
 **Finding 4 — The Second Most Valuable Segment Is Completely Unreachable**
 High Value Disengaged customers spend $931 on average and make 21 purchases
@@ -370,7 +370,7 @@ Response rate shows who is most likely to convert; average spend shows
 the potential value behind that response. Together, these two metrics
 support the recommended campaign budget priority.
 
-![Budget Allocation Evidence](outputs/charts/budget_allocation_evidence.png)
+![Budget Allocation Evidence](<outputs/charts/Budget Allocation Evidence.png>)
 
 ---
 
