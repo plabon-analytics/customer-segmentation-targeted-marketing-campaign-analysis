@@ -1,6 +1,6 @@
 # Customer Segmentation & Targeted Marketing Campaign Analysis
 
-![Python](https://img.shields.io/badge/Python-3.11-blue)
+![Python](https://img.shields.io/badge/Python-3.13-blue)
 ![Pandas](https://img.shields.io/badge/Pandas-2.x-darkblue)
 ![Scikit-learn](https://img.shields.io/badge/Scikit--learn-1.x-orange)
 ![Method](https://img.shields.io/badge/Method-K--Means%20Clustering-purple)
