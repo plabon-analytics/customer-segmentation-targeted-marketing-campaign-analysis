@@ -224,7 +224,7 @@ The same campaign budget is currently spent on both groups equally —
 despite a 10x difference in average spend and a 35x difference in
 campaign response rate.
 
-![Campaign Response Rate Per Segment (%)](<outputs/charts/Campaign Response Rate Per Segment (%).png>)
+![Campaign Response Rate Per Segment (%)](outputs/charts/Campaign%20Response%20Rate%20Per%20Segment%20(%25).png)
 
 **Finding 4 — The Second Most Valuable Segment Is Completely Unreachable**
 High Value Disengaged customers spend $931 on average and make 21 purchases
