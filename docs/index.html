@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Customer Behavior & Revenue Intelligence — Plabon Roy</title>
+<style>
+  :root{
+    --paper:#F0F1EA;
+    --paper-raised:#FFFFFF;
+    --line:#D7D8CF;
+    --line-strong:#B9BBAF;
+    --ink:#181A17;
+    --ink-soft:#5B5D53;
+    --ink-faint:#8B8D80;
+
+    --champions:#B8862B;
+    --champions-soft:#F3E7D0;
+    --hvd:#A23E2E;
+    --hvd-soft:#F3DFDA;
+    --bca:#2F6B5E;
+    --bca-soft:#DCE9E4;
+    --ard:#5B6470;
+    --ard-soft:#E2E4E7;
+
+    --serif:"Iowan Old Style","Palatino Linotype","URW Palladio",Palatino,"Book Antiqua",P052,Georgia,serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Helvetica Neue",Helvetica,Arial,sans-serif;
+    --mono:"SF Mono","Cascadia Mono",Consolas,"Liberation Mono",Menlo,monospace;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  body{background:var(--paper);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;}
+  ::selection{background:#D9CBA3;}
+
+  /* ── Nav ── */
+  nav{
+    position:sticky;top:0;z-index:100;
+    background:rgba(240,241,234,0.92);
+    backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line);
+    padding:0;
+  }
+  .nav-inner{
+    max-width:1180px;margin:0 auto;padding:0 28px;
+    display:flex;align-items:center;justify-content:space-between;
+    height:52px;
+  }
+  .nav-brand{font-family:var(--mono);font-size:12px;color:var(--ink-soft);}
+  .nav-brand b{color:var(--ink);}
+  .nav-links{display:flex;gap:24px;list-style:none;}
+  .nav-links a{font-size:13px;color:var(--ink-soft);text-decoration:none;transition:color .15s;}
+  .nav-links a:hover{color:var(--ink);}
+
+  .wrap{max-width:1180px;margin:0 auto;padding:0 28px;}
+
+  /* ── Hero ── */
+  header.hero{padding:60px 0 44px;border-bottom:1px solid var(--line);}
+  .kicker{font-family:var(--mono);font-size:12.5px;letter-spacing:.02em;color:var(--ink-soft);margin-bottom:18px;}
+  .kicker span{color:var(--ink);}
+  h1.title{
+    font-family:var(--serif);font-weight:500;
+    font-size:clamp(28px,4vw,46px);line-height:1.12;
+    margin-bottom:24px;max-width:820px;letter-spacing:-0.01em;
+  }
+  .hero-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:40px;align-items:end;margin-top:30px;}
+  .hero-copy p{font-size:16px;line-height:1.65;color:var(--ink-soft);max-width:520px;}
+  .hero-number{text-align:right;}
+  .hero-number .num{font-family:var(--serif);font-size:clamp(52px,6vw,80px);line-height:1;color:var(--hvd);font-weight:500;}
+  .hero-number .label{font-size:14px;color:var(--ink-soft);margin-top:8px;line-height:1.4;}
+
+  /* ── KPI strip ── */
+  .kpi-strip{display:grid;grid-template-columns:repeat(5,1fr);border-bottom:1px solid var(--line);}
+  .kpi{padding:22px 24px;border-left:1px solid var(--line);}
+  .kpi:first-child{border-left:none;}
+  .kpi .val{font-family:var(--mono);font-size:26px;font-weight:600;letter-spacing:-0.01em;}
+  .kpi .cap{font-size:12.5px;color:var(--ink-soft);margin-top:6px;line-height:1.4;}
+
+  /* ── Sections ── */
+  section{padding:60px 0;border-bottom:1px solid var(--line);}
+  section:last-of-type{border-bottom:none;}
+  .section-head{display:flex;justify-content:space-between;align-items:baseline;gap:24px;margin-bottom:32px;flex-wrap:wrap;}
+  h2.section-title{font-family:var(--serif);font-size:28px;font-weight:500;}
+  .section-note{font-size:13.5px;color:var(--ink-faint);max-width:360px;text-align:right;line-height:1.5;}
+
+  /* ── Campaign bar chart ── */
+  .campaign-chart{display:flex;align-items:flex-end;gap:16px;height:180px;margin-bottom:20px;}
+  .cmp-bar-wrap{display:flex;flex-direction:column;align-items:center;flex:1;}
+  .cmp-bar{width:100%;background:var(--line);position:relative;transition:background .2s;}
+  .cmp-bar-fill{width:100%;background:var(--ink-faint);transition:height .8s cubic-bezier(.2,.8,.2,1);}
+  .cmp-bar-fill.best{background:var(--champions);}
+  .cmp-bar-fill.worst{background:var(--hvd);}
+  .cmp-label{font-family:var(--mono);font-size:11.5px;color:var(--ink-soft);margin-top:8px;text-align:center;}
+  .cmp-pct{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--ink);margin-bottom:5px;text-align:center;}
+
+  .campaign-note{
+    display:flex;gap:20px;margin-top:20px;padding:18px 22px;
+    background:var(--hvd-soft);border-left:3px solid var(--hvd);
+  }
+  .campaign-note p{font-size:14px;line-height:1.6;color:var(--ink);}
+
+  /* ── EDA findings ── */
+  .findings-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+  .finding-card{
+    background:var(--paper-raised);border:1px solid var(--line);
+    padding:20px 20px 18px;
+  }
+  .finding-card .f-num{font-family:var(--serif);font-size:30px;font-weight:500;margin-bottom:6px;}
+  .finding-card .f-title{font-size:13.5px;font-weight:600;margin-bottom:6px;color:var(--ink);}
+  .finding-card .f-body{font-size:12.5px;color:var(--ink-soft);line-height:1.55;}
+
+  /* ── Segment tabs ── */
+  .tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;}
+  .tab{
+    text-align:left;background:var(--paper-raised);
+    border:1px solid var(--line);border-top:4px solid var(--tab-color,var(--line));
+    padding:16px 16px 14px;cursor:pointer;font-family:var(--sans);
+    transition:transform .15s ease;
+  }
+  .tab:hover{transform:translateY(-2px);}
+  .tab.active{box-shadow:0 0 0 1.5px var(--tab-color,var(--ink)) inset;}
+  .tab .tab-name{font-weight:600;font-size:14.5px;margin-bottom:6px;}
+  .tab .tab-meta{font-family:var(--mono);font-size:11.5px;color:var(--ink-soft);display:flex;justify-content:space-between;}
+
+  .detail{
+    background:var(--paper-raised);border:1px solid var(--line);
+    padding:32px;display:grid;grid-template-columns:1fr 1fr;gap:40px;
+  }
+  .detail-left .badge{
+    display:inline-block;font-family:var(--mono);font-size:11.5px;
+    padding:3px 9px;border-radius:2px;color:#fff;
+    background:var(--tab-color);margin-bottom:14px;
+  }
+  .detail-left h3{font-family:var(--serif);font-size:24px;margin:0 0 10px;font-weight:500;}
+  .detail-left .headline{font-size:15px;color:var(--ink-soft);line-height:1.6;margin:0 0 24px;max-width:440px;}
+
+  .stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px 20px;margin-bottom:26px;}
+  .stat b{display:block;font-family:var(--mono);font-size:20px;font-weight:600;}
+  .stat span{display:block;font-size:12px;color:var(--ink-faint);margin-top:3px;}
+
+  .bar-block{margin-bottom:14px;}
+  .bar-label{display:flex;justify-content:space-between;font-size:12.5px;color:var(--ink-soft);margin-bottom:5px;font-family:var(--mono);}
+  .bar-track{height:9px;background:var(--paper);border:1px solid var(--line);}
+  .bar-fill{height:100%;background:var(--tab-color);width:0%;transition:width .7s cubic-bezier(.2,.8,.2,1);}
+
+  .strategy-title{font-family:var(--mono);font-size:12px;color:var(--tab-color);font-weight:600;margin-bottom:4px;}
+  .strategy-heading{font-family:var(--serif);font-size:20px;margin-bottom:14px;font-weight:500;}
+  .strategy-points{margin:0;padding:0;list-style:none;}
+  .strategy-points li{
+    position:relative;padding-left:16px;
+    font-size:14px;line-height:1.55;color:var(--ink);margin-bottom:11px;
+  }
+  .strategy-points li::before{
+    content:"";position:absolute;left:0;top:8px;
+    width:6px;height:6px;background:var(--tab-color);
+  }
+  .priority-line{margin-top:20px;padding-top:16px;border-top:1px solid var(--line);font-size:13px;color:var(--ink-soft);}
+  .priority-line b{color:var(--ink);}
+
+  /* ── Bubble chart ── */
+  .bubble-wrap{background:var(--paper-raised);border:1px solid var(--line);padding:28px;position:relative;}
+  .bubble-title{font-family:var(--mono);font-size:12px;color:var(--ink-soft);margin-bottom:20px;}
+  .bubble-svg{width:100%;height:280px;}
+  .bubble-legend{display:flex;gap:20px;flex-wrap:wrap;margin-top:16px;}
+  .bubble-legend-item{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink-soft);}
+  .bubble-dot{width:10px;height:10px;border-radius:50%;}
+
+  /* ── Critical finding ── */
+  .twins{display:grid;grid-template-columns:1fr auto 1fr;background:var(--paper-raised);border:1px solid var(--line);}
+  .twin{padding:28px 30px;}
+  .twin.left{border-right:1px solid var(--line);}
+  .twin .name{font-family:var(--mono);font-size:12px;font-weight:600;margin-bottom:14px;}
+  .twin.left .name{color:var(--champions);}
+  .twin.right .name{color:var(--hvd);}
+  .twin-response{font-family:var(--serif);font-size:48px;font-weight:500;}
+  .twin.left .twin-response{color:var(--champions);}
+  .twin.right .twin-response{color:var(--hvd);}
+  .twin-response-label{font-size:12.5px;color:var(--ink-soft);margin-top:4px;margin-bottom:22px;}
+  .twin-facts{display:flex;flex-direction:column;gap:9px;}
+  .twin-facts div{display:flex;justify-content:space-between;font-size:13px;border-bottom:1px dotted var(--line);padding-bottom:6px;}
+  .twin-facts span:last-child{font-family:var(--mono);color:var(--ink-soft);}
+  .vs-col{display:flex;align-items:center;justify-content:center;padding:0 22px;font-family:var(--serif);font-style:italic;font-size:15px;color:var(--ink-faint);background:var(--paper);}
+  .finding-caption{margin-top:20px;font-size:14.5px;line-height:1.65;color:var(--ink-soft);max-width:800px;}
+  .finding-caption b{color:var(--ink);}
+
+  /* ── Priority ladder ── */
+  .ladder{display:flex;flex-direction:column;gap:10px;}
+  .rung{
+    display:grid;grid-template-columns:48px 210px 1fr 170px;
+    align-items:center;gap:18px;
+    background:var(--paper-raised);border:1px solid var(--line);
+    border-left:3px solid;padding:16px 20px;
+  }
+  .rung .rank{font-family:var(--serif);font-size:28px;color:var(--ink-faint);}
+  .rung .rname{font-weight:600;font-size:14.5px;}
+  .rung .rname small{display:block;font-family:var(--mono);font-weight:400;font-size:11.5px;color:var(--ink-faint);margin-top:2px;}
+  .rung .rreason{font-size:13px;color:var(--ink-soft);line-height:1.4;}
+  .rung .rmetric{text-align:right;font-family:var(--mono);font-size:13px;}
+  .rung .rmetric b{display:block;font-size:18px;}
+
+  /* ── Method ── */
+  .method-flow{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);}
+  .method-step{background:var(--paper-raised);padding:20px 18px;}
+  .method-step .m-num{font-family:var(--mono);font-size:12px;color:var(--ink-faint);margin-bottom:10px;}
+  .method-step .m-title{font-weight:600;font-size:14px;margin-bottom:6px;}
+  .method-step .m-body{font-size:12.5px;color:var(--ink-soft);line-height:1.5;}
+  .k-callout{margin-top:24px;display:flex;gap:24px;align-items:flex-start;background:var(--champions-soft);border-left:3px solid var(--champions);padding:18px 22px;}
+  .k-callout .k-num{font-family:var(--serif);font-size:28px;color:var(--champions);white-space:nowrap;line-height:1.2;}
+  .k-callout p{font-size:13.5px;line-height:1.65;color:var(--ink);}
+
+  /* ── Client story ── */
+  .story-box{background:var(--paper-raised);border:1px solid var(--line);padding:36px 40px;}
+  .story-box blockquote{
+    font-family:var(--serif);font-size:17px;line-height:1.75;
+    color:var(--ink);border-left:3px solid var(--line-strong);
+    padding-left:24px;margin:0 0 18px;
+  }
+  .story-box .story-credit{font-family:var(--mono);font-size:12px;color:var(--ink-faint);}
+
+  /* ── Footer ── */
+  footer{padding:34px 0 50px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;}
+  footer .who{font-size:13.5px;color:var(--ink-soft);}
+  footer .who b{color:var(--ink);}
+  footer .stack{font-family:var(--mono);font-size:11.5px;color:var(--ink-faint);}
+
+  /* ── Responsive ── */
+  @media(max-width:880px){
+    .hero-grid{grid-template-columns:1fr;}
+    .hero-number{text-align:left;}
+    .kpi-strip{grid-template-columns:repeat(2,1fr);}
+    .kpi:nth-child(3){border-left:none;}
+    .tabs{grid-template-columns:repeat(2,1fr);}
+    .detail{grid-template-columns:1fr;}
+    .stat-row{grid-template-columns:repeat(2,1fr);}
+    .twins{grid-template-columns:1fr;}
+    .twin.left{border-right:none;border-bottom:1px solid var(--line);}
+    .vs-col{padding:14px;}
+    .rung{grid-template-columns:36px 1fr;grid-template-areas:"a b" "c c" "d d";}
+    .method-flow{grid-template-columns:1fr 1fr;}
+    .findings-grid{grid-template-columns:1fr 1fr;}
+    .nav-links{display:none;}
+  }
+  @media(max-width:560px){
+    .findings-grid{grid-template-columns:1fr;}
+    .tabs{grid-template-columns:1fr 1fr;}
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <div class="nav-brand">Customer Intelligence — <b>Plabon Roy</b></div>
+    <ul class="nav-links">
+      <li><a href="#campaigns">Campaigns</a></li>
+      <li><a href="#insights">EDA Insights</a></li>
+      <li><a href="#segments">Segments</a></li>
+      <li><a href="#finding">Critical Finding</a></li>
+      <li><a href="#priority">Budget Plan</a></li>
+      <li><a href="#story">Story</a></li>
+      <li><a href="live-tools.html" 
+             style="color:var(--ink);font-weight:600;
+                    border:1px solid var(--line-strong);
+                    padding:4px 10px;">
+             Live Tools →
+         </a>
+      </li>
+    </ul>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <!-- ── Hero ── -->
+  <header class="hero">
+    <p class="kicker">University Project Expo Submission — <span>Plabon Roy</span> · Customer Behavior & Revenue Intelligence</p>
+    <h1 class="title">One campaign strategy was applied to every customer. The data says that was the problem.</h1>
+    <div class="hero-grid">
+      <div class="hero-copy">
+        <p>2,240 customers. 6 marketing campaigns. One uniform strategy. RFM scoring and K-Means clustering uncovered four behaviorally distinct groups hiding underneath a single average — including a segment spending $931 on average that has never responded to a single campaign, ever.</p>
+      </div>
+      <div class="hero-number">
+        <div class="num" id="heroCount">0</div>
+        <div class="label">of 2,240 customers never responded<br>to a single campaign, across all 6 rounds</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── KPI strip ── -->
+  <div class="kpi-strip">
+    <div class="kpi"><div class="val">2,205</div><div class="cap">customers analyzed after cleaning</div></div>
+    <div class="kpi"><div class="val">29</div><div class="cap">behavioral & demographic features</div></div>
+    <div class="kpi"><div class="val">1.4%</div><div class="cap">lowest single-campaign acceptance rate</div></div>
+    <div class="kpi"><div class="val">4</div><div class="cap">behaviorally distinct segments found</div></div>
+    <div class="kpi"><div class="val">$1,071</div><div class="cap">spend gap between highest and lowest segment</div></div>
+  </div>
+
+  <!-- ── Campaign performance ── -->
+  <section id="campaigns">
+    <div class="section-head">
+      <h2 class="section-title">Campaign performance before segmentation</h2>
+      <p class="section-note">Six campaigns. All producing single-digit acceptance rates — sent to every customer regardless of behavior.</p>
+    </div>
+
+    <div class="campaign-chart" id="campaignChart"></div>
+
+    <div class="campaign-note">
+      <p><b>The most recent campaign nearly doubled the historical average</b> — reaching ~14.8% without any formal segmentation. This raises the key question this project answers: if an accidental marginal improvement produced this result, what could a deliberate, data-driven segmentation strategy consistently achieve?</p>
+    </div>
+  </section>
+
+  <!-- ── EDA Insights ── -->
+  <section id="insights">
+    <div class="section-head">
+      <h2 class="section-title">What the data revealed before modeling</h2>
+      <p class="section-note">Six findings from EDA that directly shaped the segmentation strategy.</p>
+    </div>
+    <div class="findings-grid">
+      <div class="finding-card">
+        <div class="f-num" style="color:var(--hvd)">0.78</div>
+        <div class="f-title">Catalog → Total Spend correlation</div>
+        <div class="f-body">The strongest relationship in the entire dataset. Catalog buyers are the most reliable predictor of high total spend — confirmed before the model ran a single iteration.</div>
+      </div>
+      <div class="finding-card">
+        <div class="f-num" style="color:var(--champions)">0.72</div>
+        <div class="f-title">Past campaigns → future response</div>
+        <div class="f-body">Customers who engaged with historical campaigns are strongly likely to respond to future ones. Campaign engagement is consistent and predictable — not random.</div>
+      </div>
+      <div class="finding-card">
+        <div class="f-num" style="color:var(--ink-soft)">0.67</div>
+        <div class="f-title">Income → spend (imperfect)</div>
+        <div class="f-body">Income and spend are correlated — but not cleanly. Wide scatter at every income level proves demographics alone cannot identify valuable customers.</div>
+      </div>
+      <div class="finding-card">
+        <div class="f-num" style="color:var(--bca)">−0.20</div>
+        <div class="f-title">Recency → campaign response</div>
+        <div class="f-body">Customers who have not purchased recently also tend not to respond to campaigns. Behavioral disengagement happens on both dimensions simultaneously.</div>
+      </div>
+      <div class="finding-card">
+        <div class="f-num" style="color:var(--champions)">10×</div>
+        <div class="f-title">Spend gap within one customer base</div>
+        <div class="f-body">From $108 to $1,179 average spend — a 10× difference across segments all receiving the same campaign message at the same cost per contact.</div>
+      </div>
+      <div class="finding-card">
+        <div class="f-num" style="color:var(--hvd)">73%</div>
+        <div class="f-title">Budget reaching zero-converters</div>
+        <div class="f-body">1,640 of 2,205 customers have never responded once. Roughly 73% of campaign budget was reaching customers with a confirmed zero-conversion history.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Segment explorer ── -->
+  <section id="segments">
+    <div class="section-head">
+      <h2 class="section-title">Segment explorer</h2>
+      <p class="section-note">Built from quartile-based RFM scores clustered with K-Means (K=4). Click a segment to open its full profile and strategy.</p>
+    </div>
+    <div class="tabs" id="tabs"></div>
+    <div class="detail" id="detail"></div>
+  </section>
+
+  <!-- ── Spend vs response bubble chart ── -->
+  <section id="bubble">
+    <div class="section-head">
+      <h2 class="section-title">Value versus engagement — the full picture</h2>
+      <p class="section-note">Every segment plotted by average spend and campaign response rate. Bubble size represents customer count.</p>
+    </div>
+    <div class="bubble-wrap">
+      <div class="bubble-title">Average spend ($) vs campaign response rate (%) — bubble size = number of customers</div>
+      <svg class="bubble-svg" id="bubbleSvg" viewBox="0 0 740 280" preserveAspectRatio="xMidYMid meet"></svg>
+      <div class="bubble-legend" id="bubbleLegend"></div>
+    </div>
+  </section>
+
+  <!-- ── Critical finding ── -->
+  <section id="finding">
+    <div class="section-head">
+      <h2 class="section-title">The critical finding</h2>
+      <p class="section-note">Why behavioral segmentation was chosen over demographic segmentation.</p>
+    </div>
+    <div class="twins">
+      <div class="twin left">
+        <div class="name">CHAMPIONS</div>
+        <div class="twin-response">35.3%</div>
+        <div class="twin-response-label">campaign response rate</div>
+        <div class="twin-facts">
+          <div><span>Average income</span><span>$69,631</span></div>
+          <div><span>Age bracket</span><span>~59 years old</span></div>
+          <div><span>Customer tenure</span><span>~380 days</span></div>
+          <div><span>Average spend</span><span>$1,179</span></div>
+          <div><span>Has children</span><span>51%</span></div>
+        </div>
+      </div>
+      <div class="vs-col">vs</div>
+      <div class="twin right">
+        <div class="name">HIGH VALUE DISENGAGED</div>
+        <div class="twin-response">0.0%</div>
+        <div class="twin-response-label">campaign response rate</div>
+        <div class="twin-facts">
+          <div><span>Average income</span><span>$65,277</span></div>
+          <div><span>Age bracket</span><span>~59 years old</span></div>
+          <div><span>Customer tenure</span><span>~375 days</span></div>
+          <div><span>Average spend</span><span>$931</span></div>
+          <div><span>Has children</span><span>64%</span></div>
+        </div>
+      </div>
+    </div>
+    <p class="finding-caption"><b>Champions and High Value Disengaged are demographically near-identical</b> — similar age, income, and tenure. Yet one group responds to campaigns at 35.3% and the other at 0.0%. Demographic targeting would have grouped them together and served both the same offer. <b>Behavioral segmentation is what separated them</b> — revealing the single most important strategic distinction in the entire dataset. This one finding is the analytical justification for the entire project.</p>
+  </section>
+
+  <!-- ── Priority ladder ── -->
+  <section id="priority">
+    <div class="section-head">
+      <h2 class="section-title">Budget priority framework</h2>
+      <p class="section-note">Response rate shows who converts. Average spend shows what that conversion is worth. Together, they set the order.</p>
+    </div>
+    <div class="ladder" id="ladder"></div>
+  </section>
+
+  <!-- ── Method ── -->
+  <section id="method">
+    <div class="section-head">
+      <h2 class="section-title">Method, briefly</h2>
+      <p class="section-note">Business problem defined before a single line of code was written.</p>
+    </div>
+    <div class="method-flow">
+      <div class="method-step">
+        <div class="m-num">Steps 1–2</div>
+        <div class="m-title">Define, then explore</div>
+        <div class="m-body">Business problem and 6 analytical questions set first. EDA across demographics, spend, channels, campaigns, correlations, and outlier detection followed.</div>
+      </div>
+      <div class="method-step">
+        <div class="m-num">Steps 3–4</div>
+        <div class="m-title">Clean & engineer</div>
+        <div class="m-body">Every cleaning decision traced to an EDA finding. Six new features built — Total Spend, Total Purchases, Age, Tenure, Campaign Score, Has Children.</div>
+      </div>
+      <div class="method-step">
+        <div class="m-num">Steps 5–6</div>
+        <div class="m-title">Score & cluster</div>
+        <div class="m-body">Quartile-based RFM scoring across 5 dimensions — chosen over equal-interval scaling due to right-skewed distributions. K-Means applied to the scored features.</div>
+      </div>
+      <div class="method-step">
+        <div class="m-num">Steps 7–8</div>
+        <div class="m-title">Profile & recommend</div>
+        <div class="m-body">Four segments named and validated against real campaign response rates. Every recommendation traced back to a specific data point from the profiles.</div>
+      </div>
+    </div>
+    <div class="k-callout">
+      <div class="k-num">K=4<br><small style="font-size:12px;font-family:var(--mono);color:var(--ink-soft);">not K=2</small></div>
+      <p>The silhouette score technically peaked at K=2 (0.3739) — but two segments are too broad to act on. K=4 (0.2764) was chosen because it produces four independently actionable customer groups, and the Elbow Method confirmed a clear bend at K=4–5. <b>Analytics exists to serve business decisions, not mathematical perfection.</b></p>
+    </div>
+  </section>
+
+  <!-- ── Client story ── -->
+  <section id="story">
+    <div class="section-head">
+      <h2 class="section-title">What this actually means</h2>
+      <p class="section-note">The complete project in plain language — no jargon, no code.</p>
+    </div>
+    <div class="story-box">
+      <blockquote>
+        "Imagine running a shop where four completely different types of customers walk through the door every day. The first type — your Champions — spend heavily, come back regularly, and raise their hand every time you announce something new. The second type — your High Value Disengaged — also spend heavily and return regularly, but they completely ignore every flyer, email, and campaign you send. They buy entirely on their own terms. The third type — your Budget Conscious customers — come in often and genuinely want to buy more, but they're managing tight household budgets with children at home. And the fourth type — your Dormants — used to come in, but you haven't seen them properly in a while.
+        <br><br>
+        Now imagine you've been printing one flyer and handing it to all four groups identically — same message, same offer, same timing. Your Champions already buy so the flyer is redundant. Your High Value customers throw it away every time. Your Budget Conscious customers would love a relevant deal but the offer doesn't match their budget. And your Dormants have already mentally moved on.
+        <br><br>
+        That is exactly what this data showed was happening. And that is exactly what four targeted strategies fix — without spending an extra rupee."
+      </blockquote>
+      <div class="story-credit">— Plabon Roy, Customer Segmentation & Targeted Marketing Campaign Analysis</div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="who"><b>Plabon Roy</b> — Customer Behavior & Revenue Intelligence. Dataset: Customer Personality Analysis (Kaggle), 2,240 customers × 29 features.</div>
+    <div class="stack">Python · Pandas · Scikit-learn · K-Means · RFM Scoring · PCA</div>
+  </footer>
+
+</div><!-- /wrap -->
+
+<script>
+/* ── Data ── */
+const segments = [
+  {
+    id:'champions', name:'Champions', color:'var(--champions)', hex:'#B8862B',
+    customers:657, pct:29.8, spend:1179, response:35.3, purchases:21.3,
+    recency:48.22, income:69631, family:'51% have children',
+    headline:'Highest spend, highest response — and they use every channel you have.',
+    priority:1, priorityLabel:'Highest ROI — protect and deepen',
+    strategyTitle:'Retain & Reward',
+    points:[
+      'Tiered loyalty program — points per purchase, early access, exclusive member events',
+      'Lead offers with premium wine ($616 avg) and meat ($328 avg) bundles',
+      'Deliver simultaneously across web, store, and catalog — all three are active',
+      'Monitor recency monthly; trigger immediate re-engagement past 60 days without purchase'
+    ]
+  },
+  {
+    id:'hvd', name:'High Value Disengaged', color:'var(--hvd)', hex:'#A23E2E',
+    customers:482, pct:21.9, spend:931, response:0.0, purchases:20.9,
+    recency:50.51, income:65277, family:'64% have children',
+    headline:'0.0% response across 6 straight campaigns — while spending nearly as much as Champions.',
+    priority:3, priorityLabel:'New channel required before spend resumes',
+    strategyTitle:'Stop Wasting. Start Testing.',
+    points:[
+      'Halt standard campaign spend immediately — 6 rounds of confirmed 0.0% is conclusive',
+      'Redirect freed budget to Champions and Budget Conscious Actives',
+      'Test point-of-sale and web-behavioral trigger offers instead of blast campaigns',
+      'Goal: find the channel that actually reaches this group before increasing spend'
+    ]
+  },
+  {
+    id:'bca', name:'Budget Conscious Actives', color:'var(--bca)', hex:'#2F6B5E',
+    customers:548, pct:24.8, spend:108, response:14.2, purchases:8.2,
+    recency:24.06, income:34741, family:'86% have children',
+    headline:'Most recently active at 24 days — genuine engagement constrained by real budgets.',
+    priority:2, priorityLabel:'Highest growth potential',
+    strategyTitle:'Unlock Constrained Potential',
+    points:[
+      'Family-value framing — 86% have children, accessible pricing is the conversion lever',
+      'Family-sized bundles, multi-buy deals, and limited-time discounts',
+      'Deliver through low-cost digital and web-exclusive channels only',
+      'Frequency reward program matched to their 8.2 average purchase count'
+    ]
+  },
+  {
+    id:'ard', name:'At-Risk Dormants', color:'var(--ard)', hex:'#5B6470',
+    customers:518, pct:23.5, spend:109, response:3.9, purchases:8.3,
+    recency:75.31, income:35347, family:'88% have children',
+    headline:'Last purchased 75 days ago — approaching the threshold where recovery becomes expensive.',
+    priority:4, priorityLabel:'Minimal spend only — one attempt maximum',
+    strategyTitle:'One Attempt, Then Reallocate',
+    points:[
+      'One low-cost, family-relevant email re-engagement attempt only',
+      'Responders move into Budget Conscious Active strategies going forward',
+      'Non-responders formally classified as churned; all campaign spend stops',
+      'Freed budget redirected to Champions and Budget Conscious Actives immediately'
+    ]
+  }
+];
+
+const maxSpend    = Math.max(...segments.map(s=>s.spend));
+const maxResponse = Math.max(...segments.map(s=>s.response));
+
+/* ── Tabs & detail ── */
+const tabsEl   = document.getElementById('tabs');
+const detailEl = document.getElementById('detail');
+
+function renderTabs(activeId){
+  tabsEl.innerHTML = segments.map(s=>`
+    <button class="tab ${s.id===activeId?'active':''}" style="--tab-color:${s.color}" data-id="${s.id}">
+      <div class="tab-name">${s.name}</div>
+      <div class="tab-meta"><span>${s.customers} customers</span><span>${s.pct}%</span></div>
+    </button>
+  `).join('');
+  tabsEl.querySelectorAll('.tab').forEach(btn=>{
+    btn.addEventListener('click',()=>renderAll(btn.dataset.id));
+  });
+}
+
+function renderDetail(id){
+  const s = segments.find(x=>x.id===id);
+  detailEl.style.setProperty('--tab-color',s.color);
+  detailEl.innerHTML = `
+    <div class="detail-left">
+      <span class="badge">Priority ${s.priority} of 4</span>
+      <h3>${s.name}</h3>
+      <p class="headline">${s.headline}</p>
+      <div class="stat-row">
+        <div class="stat"><b>${s.customers}</b><span>customers (${s.pct}%)</span></div>
+        <div class="stat"><b>$${s.income.toLocaleString()}</b><span>avg income</span></div>
+        <div class="stat"><b>${s.recency.toFixed(0)} days</b><span>avg recency</span></div>
+        <div class="stat"><b>${s.purchases}</b><span>avg purchases</span></div>
+        <div class="stat"><b>$${s.spend.toLocaleString()}</b><span>avg spend</span></div>
+        <div class="stat"><b>${s.family}</b><span>household</span></div>
+      </div>
+      <div class="bar-block">
+        <div class="bar-label"><span>Average spend</span><span>$${s.spend.toLocaleString()}</span></div>
+        <div class="bar-track"><div class="bar-fill" data-width="${(s.spend/maxSpend*100).toFixed(0)}"></div></div>
+      </div>
+      <div class="bar-block">
+        <div class="bar-label"><span>Campaign response rate</span><span>${s.response}%</span></div>
+        <div class="bar-track"><div class="bar-fill" data-width="${maxResponse>0?(s.response/maxResponse*100).toFixed(0):0}"></div></div>
+      </div>
+    </div>
+    <div class="detail-right">
+      <div class="strategy-title">Marketing Strategy</div>
+      <h4 class="strategy-heading">${s.strategyTitle}</h4>
+      <ul class="strategy-points">
+        ${s.points.map(p=>`<li>${p}</li>`).join('')}
+      </ul>
+      <div class="priority-line"><b>Priority ${s.priority}:</b> ${s.priorityLabel}</div>
+    </div>
+  `;
+  requestAnimationFrame(()=>{
+    detailEl.querySelectorAll('.bar-fill').forEach(el=>{
+      el.style.width = el.dataset.width+'%';
+    });
+  });
+}
+
+function renderAll(id){
+  renderTabs(id);
+  renderDetail(id);
+}
+
+/* ── Campaign chart ── */
+const campaigns = [
+  {label:'Cmp 1', pct:6.4,  cls:''},
+  {label:'Cmp 2', pct:1.4,  cls:'worst'},
+  {label:'Cmp 3', pct:7.3,  cls:''},
+  {label:'Cmp 4', pct:7.5,  cls:''},
+  {label:'Cmp 5', pct:7.3,  cls:''},
+  {label:'Last',  pct:14.8, cls:'best'},
+];
+const chartEl = document.getElementById('campaignChart');
+const maxPct  = Math.max(...campaigns.map(c=>c.pct));
+chartEl.innerHTML = campaigns.map(c=>{
+  const h = Math.round((c.pct/maxPct)*140);
+  return `
+    <div class="cmp-bar-wrap">
+      <div class="cmp-pct">${c.pct}%</div>
+      <div class="cmp-bar" style="height:${h+40}px">
+        <div class="cmp-bar-fill ${c.cls}" style="height:${h}px;margin-top:auto;display:block;"></div>
+      </div>
+      <div class="cmp-label">${c.label}</div>
+    </div>
+  `;
+}).join('');
+
+/* ── Bubble chart (SVG) ── */
+(function(){
+  const svg = document.getElementById('bubbleSvg');
+  const W=740, H=280, PL=60, PR=30, PT=20, PB=50;
+  const iW=W-PL-PR, iH=H-PT-PB;
+
+  const maxR = Math.max(...segments.map(s=>s.response));
+  const maxS = Math.max(...segments.map(s=>s.spend));
+  const maxC = Math.max(...segments.map(s=>s.customers));
+
+  function xP(r){ return PL + (r/maxR)*iW; }
+  function yP(s){ return PT + iH - (s/maxS)*iH; }
+  function rP(c){ return 14 + (c/maxC)*28; }
+
+  // Axes
+  let ax = `<line x1="${PL}" y1="${PT}" x2="${PL}" y2="${PT+iH}" stroke="#D7D8CF" stroke-width="1"/>`;
+  ax    += `<line x1="${PL}" y1="${PT+iH}" x2="${W-PR}" y2="${PT+iH}" stroke="#D7D8CF" stroke-width="1"/>`;
+
+  // Axis labels
+  ax += `<text x="${PL-8}" y="${PT+iH/2}" text-anchor="middle" transform="rotate(-90,${PL-8},${PT+iH/2})" font-size="11" fill="#8B8D80" font-family="Consolas,monospace">Avg Spend ($)</text>`;
+  ax += `<text x="${PL+iW/2}" y="${H-8}" text-anchor="middle" font-size="11" fill="#8B8D80" font-family="Consolas,monospace">Response Rate (%)</text>`;
+
+  // Gridlines
+  [0,250,500,750,1000,1179].forEach(v=>{
+    const y = yP(v);
+    ax += `<line x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}" stroke="#D7D8CF" stroke-width="0.5" stroke-dasharray="4,4"/>`;
+    ax += `<text x="${PL-6}" y="${y+4}" text-anchor="end" font-size="10" fill="#8B8D80" font-family="Consolas,monospace">$${v}</text>`;
+  });
+  [0,10,20,30,35.3].forEach(v=>{
+    const x = xP(v);
+    ax += `<line x1="${x}" y1="${PT}" x2="${x}" y2="${PT+iH}" stroke="#D7D8CF" stroke-width="0.5" stroke-dasharray="4,4"/>`;
+    ax += `<text x="${x}" y="${PT+iH+16}" text-anchor="middle" font-size="10" fill="#8B8D80" font-family="Consolas,monospace">${v}%</text>`;
+  });
+
+  // Bubbles
+  const bubbles = segments.map(s=>{
+    const cx = xP(s.response);
+    const cy = yP(s.spend);
+    const r  = rP(s.customers);
+    const label = s.id==='bca'?'BCA':s.id==='ard'?'At-Risk':s.name.split(' ')[0];
+    return `
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="${s.hex}" fill-opacity="0.75" stroke="${s.hex}" stroke-width="1.5"/>
+      <text cx="${cx}" cy="${cy}" x="${cx}" y="${cy+4}" text-anchor="middle" font-size="11" font-weight="600" fill="#fff" font-family="-apple-system,sans-serif">${label}</text>
+    `;
+  }).join('');
+
+  svg.innerHTML = ax + bubbles;
+
+  // Legend
+  document.getElementById('bubbleLegend').innerHTML = segments.map(s=>`
+    <div class="bubble-legend-item">
+      <div class="bubble-dot" style="background:${s.hex}"></div>
+      ${s.name} — ${s.customers} customers
+    </div>
+  `).join('');
+})();
+
+/* ── Priority ladder ── */
+const ladderEl = document.getElementById('ladder');
+const ranked = [...segments].sort((a,b)=>a.priority-b.priority);
+ladderEl.innerHTML = ranked.map(s=>`
+  <div class="rung" style="border-left-color:${s.hex}">
+    <div class="rank">${s.priority}</div>
+    <div class="rname">${s.name}<small>${s.customers} customers · ${s.pct}%</small></div>
+    <div class="rreason">${s.priorityLabel}</div>
+    <div class="rmetric"><b>${s.response}%</b>$${s.spend.toLocaleString()} avg spend</div>
+  </div>
+`).join('');
+
+/* ── Hero counter ── */
+(function(){
+  const el = document.getElementById('heroCount');
+  const target = 1640;
+  let cur = 0;
+  const step = Math.ceil(target/50);
+  const tick = setInterval(()=>{
+    cur += step;
+    if(cur >= target){ cur = target; clearInterval(tick); }
+    el.textContent = cur.toLocaleString();
+  }, 18);
+})();
+
+/* ── Bar fill animation for campaign chart ── */
+document.querySelectorAll('.cmp-bar-fill').forEach(el=>{
+  el.style.height = '0';
+  setTimeout(()=>{ el.style.transition='height .8s cubic-bezier(.2,.8,.2,1)'; }, 100);
+});
+
+/* ── Init ── */
+renderAll('champions');
+</script>
+</body>
+</html>

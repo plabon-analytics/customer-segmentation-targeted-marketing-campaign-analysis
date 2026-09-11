@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Customer Intelligence — Live Decision Tools · Plabon Roy</title>
+<style>
+  :root{
+    --paper:#F0F1EA;
+    --paper-raised:#FFFFFF;
+    --line:#D7D8CF;
+    --line-strong:#B9BBAF;
+    --ink:#181A17;
+    --ink-soft:#5B5D53;
+    --ink-faint:#8B8D80;
+    --champions:#B8862B; --champions-soft:#F3E7D0;
+    --hvd:#A23E2E;       --hvd-soft:#F3DFDA;
+    --bca:#2F6B5E;       --bca-soft:#DCE9E4;
+    --ard:#5B6470;       --ard-soft:#E2E4E7;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Helvetica Neue",Helvetica,Arial,sans-serif;
+    --mono:"SF Mono","Cascadia Mono",Consolas,"Liberation Mono",Menlo,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  body{background:var(--paper);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;}
+  ::selection{background:#D9CBA3;}
+
+  /* ── Nav ── */
+  nav{position:sticky;top:0;z-index:100;background:rgba(240,241,234,0.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);}
+  .nav-inner{max-width:1180px;margin:0 auto;padding:0 28px;display:flex;align-items:center;justify-content:space-between;height:52px;}
+  .nav-brand{font-family:var(--mono);font-size:12px;color:var(--ink-soft);}
+  .nav-brand b{color:var(--ink);}
+  .nav-back{font-size:12.5px;color:var(--ink-soft);text-decoration:none;display:flex;align-items:center;gap:6px;}
+  .nav-back:hover{color:var(--ink);}
+
+  .wrap{max-width:1180px;margin:0 auto;padding:0 28px;}
+
+  /* ── Hero ── */
+  header.hero{padding:52px 0 36px;border-bottom:1px solid var(--line);}
+  .kicker{font-family:var(--mono);font-size:12.5px;letter-spacing:.02em;color:var(--ink-soft);margin-bottom:18px;}
+  .kicker span{color:var(--ink);}
+  h1.title{font-family:var(--serif);font-weight:500;font-size:clamp(26px,3.4vw,40px);line-height:1.14;margin-bottom:14px;max-width:780px;letter-spacing:-0.01em;}
+  header.hero > p{font-size:15px;line-height:1.65;color:var(--ink-soft);max-width:620px;}
+
+  /* ── Tool switcher ── */
+  .tool-switch{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);margin:28px 0 0;background:var(--paper-raised);}
+  .tool-btn{padding:16px 18px;text-align:left;background:transparent;border:none;border-right:1px solid var(--line);cursor:pointer;font-family:var(--sans);transition:background .15s;}
+  .tool-btn:last-child{border-right:none;}
+  .tool-btn .t-num{font-family:var(--mono);font-size:11px;color:var(--ink-faint);margin-bottom:5px;}
+  .tool-btn .t-name{font-weight:600;font-size:13.5px;margin-bottom:3px;}
+  .tool-btn .t-desc{font-size:11.5px;color:var(--ink-soft);line-height:1.4;}
+  .tool-btn.active{box-shadow:0 -3px 0 var(--ink) inset;background:var(--paper);}
+
+  section.tool-view{padding:44px 0 60px;display:none;}
+  section.tool-view.active{display:block;}
+
+  h2.section-title{font-family:var(--serif);font-size:24px;font-weight:500;margin-bottom:6px;}
+  .section-note{font-size:13.5px;color:var(--ink-faint);max-width:600px;line-height:1.55;margin-bottom:30px;}
+
+  /* ═══════════════════════════════════════
+     TOOL 1 — SEGMENT PREDICTOR
+  ═══════════════════════════════════════ */
+  .predictor-grid{display:grid;grid-template-columns:1fr 1.1fr;gap:36px;align-items:start;}
+  .input-card{background:var(--paper-raised);border:1px solid var(--line);padding:28px;}
+  .input-card-title{font-family:var(--mono);font-size:11px;color:var(--ink-faint);letter-spacing:.06em;text-transform:uppercase;margin-bottom:20px;}
+
+  .field{margin-bottom:22px;}
+  .field:last-child{margin-bottom:0;}
+  .field-label{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--ink);margin-bottom:9px;}
+  .field-label b{font-family:var(--mono);font-size:15px;font-weight:600;}
+  input[type=range]{width:100%;-webkit-appearance:none;height:2px;background:var(--line-strong);outline:none;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--ink);cursor:pointer;border:3px solid var(--paper-raised);box-shadow:0 0 0 1px var(--ink);}
+  input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--ink);cursor:pointer;border:3px solid var(--paper-raised);}
+  .field-range{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--ink-faint);margin-top:6px;}
+
+  .result-card{background:var(--paper-raised);border:1px solid var(--line);border-top:5px solid var(--rc,#888);padding:30px;transition:border-color .25s;}
+  .result-badge{display:inline-block;font-family:var(--mono);font-size:11px;padding:3px 9px;color:#fff;background:var(--rc,#888);margin-bottom:14px;}
+  .result-card h3{font-family:var(--serif);font-size:26px;margin-bottom:8px;font-weight:500;}
+  .result-headline{font-size:14px;color:var(--ink-soft);line-height:1.55;margin-bottom:24px;}
+
+  .result-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px;padding-bottom:22px;border-bottom:1px solid var(--line);}
+  .result-stats .stat b{display:block;font-family:var(--mono);font-size:22px;font-weight:600;color:var(--rc,#888);}
+  .result-stats .stat span{display:block;font-size:11px;color:var(--ink-faint);margin-top:3px;}
+
+  /* confidence bar */
+  .confidence-wrap{margin-bottom:20px;}
+  .confidence-label{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-soft);margin-bottom:6px;font-family:var(--mono);}
+  .confidence-track{height:8px;background:var(--line);border:1px solid var(--line-strong);}
+  .confidence-fill{height:100%;background:var(--rc,#888);transition:width .5s cubic-bezier(.2,.8,.2,1);}
+
+  /* all-segments mini-bar */
+  .all-segs-title{font-family:var(--mono);font-size:11px;color:var(--ink-faint);margin:18px 0 10px;text-transform:uppercase;letter-spacing:.05em;}
+  .seg-dist-row{display:flex;align-items:center;gap:10px;margin-bottom:7px;}
+  .seg-dist-name{font-size:12px;width:150px;flex-shrink:0;}
+  .seg-dist-track{flex:1;height:6px;background:var(--line);}
+  .seg-dist-fill{height:100%;transition:width .5s cubic-bezier(.2,.8,.2,1);}
+  .seg-dist-val{font-family:var(--mono);font-size:11px;color:var(--ink-faint);width:36px;text-align:right;}
+
+  .result-strategy-title{font-family:var(--mono);font-size:11.5px;color:var(--rc,#888);font-weight:600;margin-bottom:4px;}
+  .result-strategy-heading{font-family:var(--serif);font-size:18px;margin-bottom:10px;font-weight:500;}
+  .result-action{font-size:13.5px;line-height:1.6;color:var(--ink);}
+  .match-note{margin-top:20px;padding-top:14px;border-top:1px solid var(--line);font-size:11.5px;color:var(--ink-faint);line-height:1.5;}
+
+  /* ═══════════════════════════════════════
+     TOOL 2 — BUDGET ALLOCATOR
+  ═══════════════════════════════════════ */
+  .budget-controls{background:var(--paper-raised);border:1px solid var(--line);padding:28px;margin-bottom:28px;}
+  .budget-top{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-bottom:24px;padding-bottom:22px;border-bottom:1px solid var(--line);}
+  .alloc-row{display:grid;grid-template-columns:200px 1fr 56px;gap:14px;align-items:center;margin-bottom:16px;}
+  .alloc-row:last-child{margin-bottom:0;}
+  .alloc-name{font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;}
+  .swatch{width:9px;height:9px;display:inline-block;flex-shrink:0;}
+  .alloc-pct{font-family:var(--mono);font-size:14px;text-align:right;}
+  .alloc-sum{margin-top:16px;padding-top:14px;border-top:1px dashed var(--line);font-family:var(--mono);font-size:13px;color:var(--ink-soft);display:flex;justify-content:space-between;}
+  .alloc-sum.warn{color:var(--hvd);}
+  .alloc-sum.ok{color:var(--bca);}
+
+  .budget-kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);margin-bottom:28px;}
+  .budget-kpi{background:var(--paper-raised);padding:24px;}
+  .budget-kpi .val{font-family:var(--mono);font-size:28px;font-weight:600;}
+  .budget-kpi .val.pos{color:var(--bca);}
+  .budget-kpi .val.neg{color:var(--hvd);}
+  .budget-kpi .cap{font-size:12px;color:var(--ink-soft);margin-top:6px;line-height:1.4;}
+
+  .compare-section-title{font-family:var(--mono);font-size:11px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px;}
+  .cmp-legend{display:flex;gap:18px;margin-bottom:14px;}
+  .cmp-legend-item{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink-soft);}
+  .leg-sq{width:10px;height:6px;}
+  .bar-block{margin-bottom:16px;}
+  .bar-lbl{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-soft);margin-bottom:5px;font-family:var(--mono);}
+  .bar-track{height:9px;background:var(--paper);border:1px solid var(--line);}
+  .bar-fill{height:100%;transition:width .5s cubic-bezier(.2,.8,.2,1);}
+  .bar-fill.uniform{background:var(--line-strong);}
+  .bar-fill.proposed{background:var(--bca);}
+
+  .assumption-box{margin-top:24px;padding:18px 22px;background:var(--champions-soft);border-left:3px solid var(--champions);font-size:13px;line-height:1.6;color:var(--ink);}
+
+  /* ═══════════════════════════════════════
+     TOOL 3 — REVENUE IMPACT SIMULATOR
+  ═══════════════════════════════════════ */
+  .roi-grid{display:grid;grid-template-columns:1fr 1.2fr;gap:36px;align-items:start;}
+  .roi-controls{background:var(--paper-raised);border:1px solid var(--line);padding:28px;}
+  .roi-scenario-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:22px;}
+  .scenario-btn{padding:12px 14px;background:var(--paper);border:1px solid var(--line);cursor:pointer;font-family:var(--sans);text-align:left;}
+  .scenario-btn .s-name{font-weight:600;font-size:13px;margin-bottom:3px;}
+  .scenario-btn .s-desc{font-size:11.5px;color:var(--ink-soft);}
+  .scenario-btn.active{background:var(--paper-raised);box-shadow:0 -3px 0 var(--ink) inset;}
+
+  .roi-results{background:var(--paper-raised);border:1px solid var(--line);}
+  .roi-header{padding:20px 24px;border-bottom:1px solid var(--line);}
+  .roi-header-name{font-family:var(--serif);font-size:20px;font-weight:500;margin-bottom:4px;}
+  .roi-header-desc{font-size:13px;color:var(--ink-soft);line-height:1.5;}
+  .roi-seg-card{border-bottom:1px solid var(--line);padding:18px 24px;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;align-items:center;}
+  .roi-seg-card:last-child{border-bottom:none;}
+  .roi-seg-name{font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:8px;}
+  .roi-seg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+  .roi-metric{text-align:right;}
+  .roi-metric b{display:block;font-family:var(--mono);font-size:16px;font-weight:600;}
+  .roi-metric span{font-size:11px;color:var(--ink-faint);margin-top:2px;display:block;}
+  .roi-total-row{padding:18px 24px;background:var(--paper);border-top:2px solid var(--line-strong);display:flex;justify-content:space-between;align-items:center;}
+  .roi-total-label{font-size:13px;font-weight:600;}
+  .roi-total-val{font-family:var(--mono);font-size:22px;font-weight:600;color:var(--bca);}
+
+  /* ═══════════════════════════════════════
+     TOOL 4 — SEGMENT HEALTH MONITOR
+  ═══════════════════════════════════════ */
+  .health-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:32px;}
+  .health-card{background:var(--paper-raised);border:1px solid var(--line);border-top:4px solid;padding:24px;}
+  .health-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;}
+  .health-name{font-weight:600;font-size:15px;margin-bottom:3px;}
+  .health-count{font-family:var(--mono);font-size:12px;color:var(--ink-faint);}
+  .health-pill{font-family:var(--mono);font-size:11px;padding:3px 10px;border-radius:2px;font-weight:600;}
+  .health-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+  .hm-val{font-family:var(--mono);font-size:17px;font-weight:600;}
+  .hm-label{font-size:11px;color:var(--ink-faint);margin-top:2px;}
+  .health-signal{font-size:13px;line-height:1.55;color:var(--ink-soft);border-top:1px solid var(--line);padding-top:14px;}
+  .health-signal b{color:var(--ink);}
+
+  .alert-strip{background:var(--hvd-soft);border:1px solid var(--hvd);padding:18px 22px;margin-bottom:24px;display:flex;gap:16px;align-items:flex-start;}
+  .alert-icon{font-size:18px;flex-shrink:0;margin-top:1px;}
+  .alert-body{font-size:13.5px;line-height:1.6;color:var(--ink);}
+
+  .action-checklist{background:var(--paper-raised);border:1px solid var(--line);}
+  .checklist-header{padding:16px 22px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:12px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em;}
+  .checklist-item{padding:14px 22px;border-bottom:1px solid var(--line);display:flex;gap:14px;align-items:flex-start;cursor:pointer;}
+  .checklist-item:last-child{border-bottom:none;}
+  .checklist-item input[type=checkbox]{margin-top:3px;flex-shrink:0;accent-color:var(--bca);width:15px;height:15px;}
+  .checklist-item label{font-size:13.5px;line-height:1.5;cursor:pointer;}
+  .checklist-item label b{color:var(--ink);}
+  .checklist-item label span{color:var(--ink-soft);}
+  .checklist-item.done label{text-decoration:line-through;color:var(--ink-faint);}
+
+  /* ── Footer ── */
+  footer{padding:30px 0 56px;border-top:1px solid var(--line);font-size:12px;color:var(--ink-faint);display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+  footer a{color:var(--ink-soft);text-decoration:none;}
+  footer a:hover{color:var(--ink);}
+
+  @media(max-width:820px){
+    .tool-switch{grid-template-columns:repeat(2,1fr);}
+    .predictor-grid,.roi-grid{grid-template-columns:1fr;}
+    .budget-top{grid-template-columns:1fr;}
+    .budget-kpi-grid{grid-template-columns:1fr 1fr;}
+    .result-stats{grid-template-columns:1fr 1fr;}
+    .roi-seg-card{grid-template-columns:1fr 1fr;}
+    .health-grid{grid-template-columns:1fr;}
+    .alloc-row{grid-template-columns:1fr;gap:5px;}
+    .alloc-pct{text-align:left;}
+    .roi-scenario-strip{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <div class="nav-brand">Customer Intelligence — <b>Live Decision Tools</b></div>
+    <a class="nav-back" href="index.html">← Back to Dashboard</a>
+  </div>
+</nav>
+
+<div class="wrap">
+  <header class="hero">
+    <p class="kicker">CUSTOMER INTELLIGENCE — LIVE DECISION TOOLS <span>· companion to the segmentation analysis by Plabon Roy</span></p>
+    <h1 class="title">Four tools. Same model. Real decisions.</h1>
+    <p>Built directly from the K=4 K-Means segmentation — the same segment profiles, response rates, and strategies from the notebook are what power these tools. Match any customer to a segment, model budget impact, project revenue, and monitor segment health.</p>
+
+    <div class="tool-switch" id="toolSwitch">
+      <button class="tool-btn active" data-tool="predict">
+        <div class="t-num">Tool 01</div>
+        <div class="t-name">Segment Predictor</div>
+        <div class="t-desc">Enter a customer profile, get their segment and strategy</div>
+      </button>
+      <button class="tool-btn" data-tool="budget">
+        <div class="t-num">Tool 02</div>
+        <div class="t-name">Budget Allocator</div>
+        <div class="t-desc">Shift budget across segments, watch responses change</div>
+      </button>
+      <button class="tool-btn" data-tool="roi">
+        <div class="t-num">Tool 03</div>
+        <div class="t-name">Revenue Simulator</div>
+        <div class="t-desc">Project the revenue impact of each budget scenario</div>
+      </button>
+      <button class="tool-btn" data-tool="health">
+        <div class="t-num">Tool 04</div>
+        <div class="t-name">Health Monitor</div>
+        <div class="t-desc">Live segment health signals and action checklist</div>
+      </button>
+    </div>
+  </header>
+
+  <!-- ══════════════════════════════════════════
+       TOOL 1 — SEGMENT PREDICTOR
+  ══════════════════════════════════════════ -->
+  <section class="tool-view active" id="viewPredict">
+    <h2 class="section-title">Segment predictor</h2>
+    <p class="section-note">Describe a customer using the four sliders. The tool calculates their distance to the centroid of each segment and returns the closest match — along with how confident the match is and what campaign action follows.</p>
+
+    <div class="predictor-grid">
+      <div class="input-card">
+        <div class="input-card-title">Customer Profile Inputs</div>
+        <div class="field">
+          <div class="field-label">Recency — days since last purchase <b id="valRecency">50</b></div>
+          <input type="range" id="inRecency" min="0" max="99" value="50">
+          <div class="field-range"><span>0 (just bought)</span><span>99 days</span></div>
+        </div>
+        <div class="field">
+          <div class="field-label">Total spend <b id="valSpend">$600</b></div>
+          <input type="range" id="inSpend" min="0" max="2500" step="10" value="600">
+          <div class="field-range"><span>$0</span><span>$2,500</span></div>
+        </div>
+        <div class="field">
+          <div class="field-label">Number of purchases <b id="valPurchases">14</b></div>
+          <input type="range" id="inPurchases" min="0" max="30" value="14">
+          <div class="field-range"><span>0</span><span>30</span></div>
+        </div>
+        <div class="field">
+          <div class="field-label">Annual income <b id="valIncome">$52,000</b></div>
+          <input type="range" id="inIncome" min="0" max="150000" step="1000" value="52000">
+          <div class="field-range"><span>$0</span><span>$150,000</span></div>
+        </div>
+        <div class="field">
+          <div class="field-label">Campaigns accepted (of 6) <b id="valCampaigns">1</b></div>
+          <input type="range" id="inCampaigns" min="0" max="6" value="1">
+          <div class="field-range"><span>0 (none accepted)</span><span>6 (all accepted)</span></div>
+        </div>
+
+        <div class="all-segs-title">Distance to each segment centroid</div>
+        <div id="allSegsDist"></div>
+      </div>
+
+      <div class="result-card" id="resultCard">
+        <span class="result-badge" id="resultBadge">PRIORITY 1</span>
+        <h3 id="resultName">—</h3>
+        <p class="result-headline" id="resultHeadline"></p>
+
+        <div class="result-stats">
+          <div class="stat"><b id="resultResponse">—</b><span>campaign response rate</span></div>
+          <div class="stat"><b id="resultShare">—</b><span>of customer base</span></div>
+          <div class="stat"><b id="resultSpend">—</b><span>avg segment spend</span></div>
+        </div>
+
+        <div class="confidence-wrap">
+          <div class="confidence-label">
+            <span>Match confidence</span>
+            <span id="confidenceVal">—</span>
+          </div>
+          <div class="confidence-track">
+            <div class="confidence-fill" id="confidenceFill" style="width:0%"></div>
+          </div>
+        </div>
+
+        <p class="result-strategy-title" id="resultStratLabel">—</p>
+        <h4 class="result-strategy-heading" id="resultStratHeading"></h4>
+        <p class="result-action" id="resultAction"></p>
+
+        <p class="match-note">Matched using nearest-centroid distance across recency, spend, purchases, income, and campaign acceptance — all normalised to 0–1. This approximates the K-Means logic from the notebook (n=2,205). Confidence = margin between closest and second-closest segment, expressed as a percentage of the maximum possible margin.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════
+       TOOL 2 — BUDGET ALLOCATOR
+  ══════════════════════════════════════════ -->
+  <section class="tool-view" id="viewBudget">
+    <h2 class="section-title">Budget allocator</h2>
+    <p class="section-note">Set a total campaign budget and cost per customer contacted. Allocate the percentage going to each segment using the sliders. Expected responses are calculated from each segment's actual observed response rate from the analysis.</p>
+
+    <div class="budget-controls">
+      <div class="budget-top">
+        <div class="field">
+          <div class="field-label">Total campaign budget <b id="valBudget">₹50,000</b></div>
+          <input type="range" id="inBudget" min="5000" max="200000" step="1000" value="50000">
+          <div class="field-range"><span>₹5,000</span><span>₹2,00,000</span></div>
+        </div>
+        <div class="field">
+          <div class="field-label">Cost per customer contacted <b id="valCost">₹25</b></div>
+          <input type="range" id="inCost" min="5" max="100" step="5" value="25">
+          <div class="field-range"><span>₹5</span><span>₹100</span></div>
+        </div>
+      </div>
+      <div id="allocRows"></div>
+      <div class="alloc-sum" id="allocSum">
+        <span>Total allocated</span>
+        <span id="allocSumVal">100%</span>
+      </div>
+    </div>
+
+    <div class="budget-kpi-grid">
+      <div class="budget-kpi">
+        <div class="val" id="kpiCurrent">—</div>
+        <div class="cap">expected responses — uniform split (original 6-campaign approach)</div>
+      </div>
+      <div class="budget-kpi">
+        <div class="val pos" id="kpiProposed">—</div>
+        <div class="cap">expected responses — your allocation above</div>
+      </div>
+      <div class="budget-kpi">
+        <div class="val pos" id="kpiLift">—</div>
+        <div class="cap">additional responses from the same budget, no extra spend</div>
+      </div>
+    </div>
+
+    <div class="compare-section-title">Contacts & responses — uniform vs your allocation</div>
+    <div class="cmp-legend">
+      <div class="cmp-legend-item"><div class="leg-sq" style="background:var(--line-strong)"></div>Uniform split (original approach)</div>
+      <div class="cmp-legend-item"><div class="leg-sq" style="background:var(--bca)"></div>Your allocation</div>
+    </div>
+    <div id="compareBars"></div>
+
+    <div class="assumption-box">
+      <b>How the model works:</b> each segment receives its allocated budget share, divided by cost-per-contact to get customers contacted (capped at segment size). Expected responses = contacts × that segment's real observed response rate from the analysis. The uniform baseline spreads the same total budget proportionally by segment size — exactly what the original 6 campaigns did.
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════
+       TOOL 3 — REVENUE SIMULATOR
+  ══════════════════════════════════════════ -->
+  <section class="tool-view" id="viewROI">
+    <h2 class="section-title">Revenue impact simulator</h2>
+    <p class="section-note">Compare three budget scenarios and see the projected revenue each approach generates — using each segment's real average spend and observed response rate as the revenue model.</p>
+
+    <div class="roi-grid">
+      <div class="roi-controls">
+        <div class="input-card-title">Simulation Controls</div>
+
+        <div class="roi-scenario-strip" id="scenarioBtns">
+          <button class="scenario-btn active" data-scenario="uniform">
+            <div class="s-name">Uniform Split</div>
+            <div class="s-desc">Equal budget per customer — the original approach</div>
+          </button>
+          <button class="scenario-btn" data-scenario="priority">
+            <div class="s-name">Priority Framework</div>
+            <div class="s-desc">Champions 45%, BCA 30%, HVD 15%, ARD 10%</div>
+          </button>
+          <button class="scenario-btn" data-scenario="champions">
+            <div class="s-name">Champions First</div>
+            <div class="s-desc">Champions 70%, BCA 25%, HVD 5%, ARD 0%</div>
+          </button>
+        </div>
+
+        <div class="field" style="margin-top:20px;">
+          <div class="field-label">Total campaign budget <b id="roiBudgetVal">₹1,00,000</b></div>
+          <input type="range" id="roiBudget" min="10000" max="500000" step="5000" value="100000">
+          <div class="field-range"><span>₹10,000</span><span>₹5,00,000</span></div>
+        </div>
+        <div class="field">
+          <div class="field-label">Cost per customer contacted <b id="roiCostVal">₹25</b></div>
+          <input type="range" id="roiCost" min="5" max="100" step="5" value="25">
+          <div class="field-range"><span>₹5</span><span>₹100</span></div>
+        </div>
+        <div class="field">
+          <div class="field-label">Avg revenue per responding customer <b id="roiRevenueVal">Segment avg spend</b></div>
+          <select id="roiRevenueMode" style="width:100%;padding:8px;border:1px solid var(--line);background:var(--paper);font-family:var(--sans);font-size:13px;color:var(--ink);">
+            <option value="segment">Use each segment's actual avg spend</option>
+            <option value="blended">Use blended avg spend ($350)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="roi-results" id="roiResults">
+        <div class="roi-header">
+          <div class="roi-header-name" id="roiScenarioName">Uniform Split</div>
+          <div class="roi-header-desc" id="roiScenarioDesc">Equal budget per customer — the original 6-campaign approach</div>
+        </div>
+        <div id="roiSegCards"></div>
+        <div class="roi-total-row">
+          <div class="roi-total-label">Total projected revenue</div>
+          <div class="roi-total-val" id="roiTotalRevenue">—</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════
+       TOOL 4 — SEGMENT HEALTH MONITOR
+  ══════════════════════════════════════════ -->
+  <section class="tool-view" id="viewHealth">
+    <h2 class="section-title">Segment health monitor</h2>
+    <p class="section-note">A live dashboard showing the health signal of each segment based on its behavioral profile — with an action checklist to track what has been implemented.</p>
+
+    <div class="alert-strip">
+      <div class="alert-icon">⚠</div>
+      <div class="alert-body"><b>At-Risk Dormants require immediate attention.</b> Average recency of 75.31 days places this segment close to the 90-day threshold beyond which re-engagement becomes significantly harder and more expensive. The window for low-cost recovery is narrowing.</div>
+    </div>
+
+    <div class="health-grid" id="healthGrid"></div>
+
+    <div class="action-checklist">
+      <div class="checklist-header">Recommended action checklist — track implementation</div>
+      <div class="checklist-item" id="chk1">
+        <input type="checkbox" id="c1">
+        <label for="c1"><b>Champions:</b> <span>Launch tiered loyalty program — points per purchase, early access, exclusive member events</span></label>
+      </div>
+      <div class="checklist-item" id="chk2">
+        <input type="checkbox" id="c2">
+        <label for="c2"><b>Champions:</b> <span>Set up monthly recency monitoring — automated trigger if any Champion exceeds 60 days without a purchase</span></label>
+      </div>
+      <div class="checklist-item" id="chk3">
+        <input type="checkbox" id="c3">
+        <label for="c3"><b>High Value Disengaged:</b> <span>Halt all standard campaign spend — redirect freed budget immediately to Champions and Budget Conscious Actives</span></label>
+      </div>
+      <div class="checklist-item" id="chk4">
+        <input type="checkbox" id="c4">
+        <label for="c4"><b>High Value Disengaged:</b> <span>Design and test first behavior-triggered offer at point of purchase (in-store or web)</span></label>
+      </div>
+      <div class="checklist-item" id="chk5">
+        <input type="checkbox" id="c5">
+        <label for="c5"><b>Budget Conscious Actives:</b> <span>Design family-value bundle campaign — multi-buy deal on wines or meat products at accessible pricing</span></label>
+      </div>
+      <div class="checklist-item" id="chk6">
+        <input type="checkbox" id="c6">
+        <label for="c6"><b>Budget Conscious Actives:</b> <span>Launch frequency reward program matched to 8.2 average purchase count — low-cost digital delivery only</span></label>
+      </div>
+      <div class="checklist-item" id="chk7">
+        <input type="checkbox" id="c7">
+        <label for="c7"><b>At-Risk Dormants:</b> <span>Send one single low-cost family-relevant re-engagement email — do not send a second</span></label>
+      </div>
+      <div class="checklist-item" id="chk8">
+        <input type="checkbox" id="c8">
+        <label for="c8"><b>At-Risk Dormants:</b> <span>Formally classify non-responders as churned and stop all spend — reallocate to Champions and Budget Conscious Actives</span></label>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div>Customer Segmentation & Targeted Marketing Campaign Analysis — <b style="color:var(--ink-soft)">Plabon Roy</b> · Dataset: Customer Personality Analysis (Kaggle) · 2,205 customers analyzed after cleaning · K=4 K-Means clustering on RFM-scored behavioral features</div>
+    <div><a href="https://github.com/plabon-analytics/customer-segmentation-targeted-marketing-campaign-analysis" target="_blank">github.com/plabon-analytics</a></div>
+  </footer>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════
+   DATA — All corrected from notebook outputs
+═══════════════════════════════════════════ */
+const segments = [
+  {
+    id:'champions', name:'Champions', color:'var(--champions)', hex:'#B8862B',
+    soft:'var(--champions-soft)',
+    customers:657, pct:29.8, response:35.3,
+    recency:48.22, spend:1179, purchases:21.3, income:69631, campaigns:1.21,
+    headline:'Highest spend, highest response — and they use every channel you have.',
+    priority:1, priorityLabel:'PRIORITY 1',
+    strategyTitle:'RETAIN & REWARD',
+    strategyHeading:'Protect and grow this group',
+    action:'Tiered loyalty program — points per purchase, early access to new products, exclusive member events. Lead campaign offers with premium wine ($616 avg) and meat ($328 avg) bundles, delivered simultaneously across web, store, and catalog. Monitor recency monthly and trigger re-engagement the moment any Champion passes 60 days without a purchase.',
+    healthStatus:'Healthy', healthColor:'#2F6B5E',
+    healthSignal:'Champions are performing as expected — highest spend, highest response, most recently active of the high-value segments. <b>Primary risk:</b> complacency. Without a loyalty program that recognises their tenure and value, even engaged customers drift. The 60-day recency trigger is the most important protective action.',
+    recencyRisk:'Low'
+  },
+  {
+    id:'hvd', name:'High Value Disengaged', color:'var(--hvd)', hex:'#A23E2E',
+    soft:'var(--hvd-soft)',
+    customers:482, pct:21.9, response:0.0,
+    recency:50.51, spend:931, purchases:20.9, income:65277, campaigns:0.00,
+    headline:'0.0% response across 6 straight campaigns — while spending nearly as much as Champions.',
+    priority:3, priorityLabel:'PRIORITY 3',
+    strategyTitle:'STOP WASTING. START TESTING.',
+    strategyHeading:'New channel required before spend resumes',
+    action:'Halt all standard campaign spend immediately — 6 consecutive rounds of 0.0% is conclusive evidence the current format does not reach this segment. Redirect freed budget to Champions and Budget Conscious Actives. Test behavior-triggered offers at point of purchase — in-store promotions and web-behavioral nudges triggered by an actual purchase action, not unsolicited outreach.',
+    healthStatus:'Critical', healthColor:'#A23E2E',
+    healthSignal:'0.0% campaign response across 6 rounds while maintaining $931 average spend. <b>The most urgent strategic issue in the dataset:</b> the business is systematically spending campaign budget on its second most valuable segment and receiving nothing back — not because these customers are disengaged, but because the campaign format is wrong. Every round of standard campaign spend on this segment is confirmed waste.',
+    recencyRisk:'Medium'
+  },
+  {
+    id:'bca', name:'Budget Conscious Actives', color:'var(--bca)', hex:'#2F6B5E',
+    soft:'var(--bca-soft)',
+    customers:548, pct:24.8, response:14.2,
+    recency:24.06, spend:108, purchases:8.2, income:34741, campaigns:0.24,
+    headline:'Most recently active at 24 days — genuine engagement constrained by real budgets.',
+    priority:2, priorityLabel:'PRIORITY 2',
+    strategyTitle:'UNLOCK CONSTRAINED POTENTIAL',
+    strategyHeading:'Highest growth potential',
+    action:'Family-value framing — 86% have children and accessible pricing is the primary conversion lever. Design campaigns around family-sized bundles, multi-buy deals, and limited-time discounts that make higher spend financially viable. Deliver through low-cost digital and web-exclusive channels only. Launch a frequency reward program aligned with their 8.2 average purchase count.',
+    healthStatus:'Good', healthColor:'#2F6B5E',
+    healthSignal:'Most recently active segment at 24.06 days recency — clearly still engaged and present. <b>Primary opportunity:</b> financial constraints (not lack of interest) are the only barrier to higher spend. 14.2% campaign response despite being the lowest income group proves genuine receptiveness. The right value-aligned offer has measurable, near-term conversion potential.',
+    recencyRisk:'Low'
+  },
+  {
+    id:'ard', name:'At-Risk Dormants', color:'var(--ard)', hex:'#5B6470',
+    soft:'var(--ard-soft)',
+    customers:518, pct:23.5, response:3.9,
+    recency:75.31, spend:109, purchases:8.3, income:35347, campaigns:0.12,
+    headline:'Last purchased 75 days ago — approaching the point of no return.',
+    priority:4, priorityLabel:'PRIORITY 4',
+    strategyTitle:'ONE ATTEMPT, THEN REALLOCATE',
+    strategyHeading:'Minimal spend only — the window is closing',
+    action:'Send one single low-cost, family-relevant email re-engagement campaign — nothing more. If they respond, move them into Budget Conscious Active strategies immediately. If they do not respond, formally classify as churned and stop all campaign spend on this segment. Redirect freed budget to Champions and Budget Conscious Actives where returns are proven.',
+    healthStatus:'At Risk', healthColor:'#B8862B',
+    healthSignal:'At 75.31 days average recency, this segment is approaching the 90-day threshold beyond which re-engagement success rates drop significantly. <b>The decision window is narrow:</b> one targeted attempt now costs very little; waiting another campaign cycle may make recovery impossible without disproportionate spend. 3.9% response means roughly 1 in 25 customers will respond — act on those and accept the rest as churned.',
+    recencyRisk:'High'
+  }
+];
+
+const ranges = {
+  recency:[0,99], spend:[0,2500],
+  purchases:[0,30], income:[0,150000], campaigns:[0,6]
+};
+
+function norm(key, val){
+  const [mn,mx] = ranges[key];
+  return (val-mn)/(mx-mn);
+}
+
+function distanceTo(seg, inp){
+  return Math.sqrt(
+    Math.pow(norm('recency',seg.recency) - norm('recency',inp.recency),2) +
+    Math.pow(norm('spend',seg.spend)     - norm('spend',inp.spend),2) +
+    Math.pow(norm('purchases',seg.purchases) - norm('purchases',inp.purchases),2) +
+    Math.pow(norm('income',seg.income)   - norm('income',inp.income),2) +
+    Math.pow(norm('campaigns',seg.campaigns) - norm('campaigns',inp.campaigns),2)
+  );
+}
+
+function fmt(n){ return '₹'+Math.round(n).toLocaleString('en-IN'); }
+function fmtD(n){ return '$'+Math.round(n).toLocaleString(); }
+
+/* ═══════════════════════════════════════════
+   TOOL SWITCHER
+═══════════════════════════════════════════ */
+const views = {
+  predict:document.getElementById('viewPredict'),
+  budget:document.getElementById('viewBudget'),
+  roi:document.getElementById('viewROI'),
+  health:document.getElementById('viewHealth')
+};
+
+document.getElementById('toolSwitch').querySelectorAll('.tool-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tool-btn').forEach(b=>b.classList.remove('active'));
+    Object.values(views).forEach(v=>v.classList.remove('active'));
+    btn.classList.add('active');
+    views[btn.dataset.tool].classList.add('active');
+  });
+});
+
+/* ═══════════════════════════════════════════
+   TOOL 1 — PREDICTOR
+═══════════════════════════════════════════ */
+const inRecency   = document.getElementById('inRecency');
+const inSpend     = document.getElementById('inSpend');
+const inPurchases = document.getElementById('inPurchases');
+const inIncome    = document.getElementById('inIncome');
+const inCampaigns = document.getElementById('inCampaigns');
+
+function updatePredictor(){
+  const inp = {
+    recency: +inRecency.value, spend: +inSpend.value,
+    purchases: +inPurchases.value, income: +inIncome.value,
+    campaigns: +inCampaigns.value
+  };
+  document.getElementById('valRecency').textContent   = inp.recency+' days';
+  document.getElementById('valSpend').textContent     = fmtD(inp.spend);
+  document.getElementById('valPurchases').textContent = inp.purchases;
+  document.getElementById('valIncome').textContent    = fmtD(inp.income);
+  document.getElementById('valCampaigns').textContent = inp.campaigns;
+
+  const withDist = segments.map(s=>({...s, dist:distanceTo(s,inp)}))
+                            .sort((a,b)=>a.dist-b.dist);
+  const best = withDist[0];
+  const maxDist = Math.max(...withDist.map(x=>x.dist));
+
+  // confidence = how much better than second place, normalised
+  const margin = withDist[1].dist - best.dist;
+  const confidence = Math.min(100, Math.round((margin / (maxDist||1)) * 200));
+
+  const card = document.getElementById('resultCard');
+  card.style.setProperty('--rc', best.hex);
+
+  document.getElementById('resultBadge').textContent        = best.priorityLabel;
+  document.getElementById('resultName').textContent         = best.name;
+  document.getElementById('resultHeadline').textContent     = best.headline;
+  document.getElementById('resultResponse').textContent     = best.response.toFixed(1)+'%';
+  document.getElementById('resultShare').textContent        = best.pct+'%';
+  document.getElementById('resultSpend').textContent        = fmtD(best.spend);
+  document.getElementById('resultStratLabel').textContent   = best.strategyTitle;
+  document.getElementById('resultStratHeading').textContent = best.strategyHeading;
+  document.getElementById('resultAction').textContent       = best.action;
+  document.getElementById('confidenceVal').textContent      = confidence+'%';
+  document.getElementById('confidenceFill').style.width     = confidence+'%';
+
+  // All-segments distance bars
+  document.getElementById('allSegsDist').innerHTML = withDist.map(s=>`
+    <div class="seg-dist-row">
+      <div class="seg-dist-name" style="color:${s.id===best.id?s.hex:''};font-weight:${s.id===best.id?'600':'400'}">${s.name}</div>
+      <div class="seg-dist-track"><div class="seg-dist-fill" style="width:${100-(s.dist/maxDist*100)}%;background:${s.hex}"></div></div>
+      <div class="seg-dist-val">${(1-s.dist/maxDist).toFixed(2)}</div>
+    </div>
+  `).join('');
+}
+
+[inRecency,inSpend,inPurchases,inIncome,inCampaigns].forEach(el=>el.addEventListener('input',updatePredictor));
+updatePredictor();
+
+/* ═══════════════════════════════════════════
+   TOOL 2 — BUDGET ALLOCATOR
+═══════════════════════════════════════════ */
+const inBudget = document.getElementById('inBudget');
+const inCost   = document.getElementById('inCost');
+const defaultAlloc = {champions:45,bca:30,hvd:15,ard:10};
+const alloc = {...defaultAlloc};
+
+document.getElementById('allocRows').innerHTML = segments.map(s=>`
+  <div class="alloc-row">
+    <div class="alloc-name"><span class="swatch" style="background:${s.hex}"></span>${s.name}</div>
+    <input type="range" min="0" max="100" value="${alloc[s.id]}" data-seg="${s.id}" class="allocSlider">
+    <div class="alloc-pct" id="ap-${s.id}">${alloc[s.id]}%</div>
+  </div>
+`).join('');
+
+document.getElementById('compareBars').innerHTML = segments.map(s=>`
+  <div class="bar-block">
+    <div class="bar-lbl"><span>${s.name}</span><span id="bv-${s.id}">—</span></div>
+    <div class="bar-track" style="margin-bottom:3px"><div class="bar-fill uniform" id="bc-${s.id}" style="width:0%"></div></div>
+    <div class="bar-track"><div class="bar-fill proposed" id="bp-${s.id}" style="width:0%"></div></div>
+  </div>
+`).join('');
+
+function updateBudget(){
+  const budget = +inBudget.value;
+  const cost   = +inCost.value;
+  document.getElementById('valBudget').textContent = fmt(budget);
+  document.getElementById('valCost').textContent   = '₹'+cost;
+
+  const sum = Object.values(alloc).reduce((a,b)=>a+b,0);
+  const sumEl = document.getElementById('allocSum');
+  document.getElementById('allocSumVal').textContent = sum+'%';
+  sumEl.className = 'alloc-sum'+(sum===100?' ok':' warn');
+
+  const total = segments.reduce((a,s)=>a+s.customers,0);
+  let curTotal=0, propTotal=0, maxC=0;
+
+  const rows = segments.map(s=>{
+    const uBudget = budget*(s.customers/total);
+    const uContact = Math.min(s.customers, uBudget/cost);
+    const curResp = uContact*(s.response/100);
+
+    const pBudget = budget*((alloc[s.id]||0)/100);
+    const pContact = Math.min(s.customers, pBudget/cost);
+    const propResp = pContact*(s.response/100);
+
+    curTotal  += curResp;
+    propTotal += propResp;
+    maxC = Math.max(maxC, uContact, pContact);
+    return {s, uContact, pContact, curResp, propResp};
+  });
+
+  rows.forEach(r=>{
+    document.getElementById(`bc-${r.s.id}`).style.width = (maxC?(r.uContact/maxC*100):0)+'%';
+    document.getElementById(`bp-${r.s.id}`).style.width = (maxC?(r.pContact/maxC*100):0)+'%';
+    document.getElementById(`bv-${r.s.id}`).textContent =
+      `Uniform: ${Math.round(r.uContact)} contacts → ${r.curResp.toFixed(0)} resp   |   Proposed: ${Math.round(r.pContact)} contacts → ${r.propResp.toFixed(0)} resp`;
+  });
+
+  document.getElementById('kpiCurrent').textContent  = Math.round(curTotal);
+  document.getElementById('kpiProposed').textContent = Math.round(propTotal);
+  const lift = propTotal-curTotal;
+  const liftEl = document.getElementById('kpiLift');
+  liftEl.textContent = (lift>=0?'+':'')+Math.round(lift);
+  liftEl.className = 'val '+(lift>=0?'pos':'neg');
+}
+
+document.querySelectorAll('.allocSlider').forEach(sl=>{
+  sl.addEventListener('input',e=>{
+    alloc[e.target.dataset.seg] = +e.target.value;
+    document.getElementById(`ap-${e.target.dataset.seg}`).textContent = alloc[e.target.dataset.seg]+'%';
+    updateBudget();
+  });
+});
+inBudget.addEventListener('input',updateBudget);
+inCost.addEventListener('input',updateBudget);
+updateBudget();
+
+/* ═══════════════════════════════════════════
+   TOOL 3 — REVENUE SIMULATOR
+═══════════════════════════════════════════ */
+const scenarios = {
+  uniform:   {name:'Uniform Split', desc:'Equal budget per customer — exactly how the original 6 campaigns were run', alloc:{champions:29.8,hvd:21.9,bca:24.8,ard:23.5}},
+  priority:  {name:'Priority Framework', desc:'Champions 45% · Budget Conscious 30% · High Value Disengaged 15% · At-Risk 10% — the recommended reallocation', alloc:{champions:45,bca:30,hvd:15,ard:10}},
+  champions: {name:'Champions First', desc:'Maximum concentration on the highest-converting segment — Champions 70%, BCA 25%, HVD 5%, ARD 0%', alloc:{champions:70,bca:25,hvd:5,ard:0}}
+};
+let activeScenario = 'uniform';
+
+function updateROI(){
+  const budget = +document.getElementById('roiBudget').value;
+  const cost   = +document.getElementById('roiCost').value;
+  const mode   = document.getElementById('roiRevenueMode').value;
+  const sc     = scenarios[activeScenario];
+
+  document.getElementById('roiBudgetVal').textContent  = fmt(budget);
+  document.getElementById('roiCostVal').textContent    = '₹'+cost;
+  document.getElementById('roiScenarioName').textContent = sc.name;
+  document.getElementById('roiScenarioDesc').textContent = sc.desc;
+
+  let total = 0;
+  document.getElementById('roiSegCards').innerHTML = segments.map(s=>{
+    const pct      = sc.alloc[s.id]||0;
+    const segBudget = budget*(pct/100);
+    const contacts  = Math.min(s.customers, segBudget/cost);
+    const responses = contacts*(s.response/100);
+    const revenuePerResp = mode==='segment' ? s.spend : 350;
+    const revenue   = responses * revenuePerResp;
+    total += revenue;
+    return {s, pct, contacts, responses, revenue};
+  }).map(r=>`
+    <div class="roi-seg-card">
+      <div class="roi-seg-name"><div class="roi-seg-dot" style="background:${r.s.hex}"></div>${r.s.name}</div>
+      <div class="roi-metric"><b>${r.pct.toFixed(1)}%</b><span>budget share</span></div>
+      <div class="roi-metric"><b>${Math.round(r.responses)}</b><span>expected responses</span></div>
+      <div class="roi-metric" style="color:${r.s.hex}"><b>${fmt(r.revenue)}</b><span>projected revenue</span></div>
+    </div>
+  `).join('');
+
+  document.getElementById('roiTotalRevenue').textContent = fmt(total);
+}
+
+document.getElementById('scenarioBtns').querySelectorAll('.scenario-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.scenario-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    activeScenario = btn.dataset.scenario;
+    updateROI();
+  });
+});
+document.getElementById('roiBudget').addEventListener('input',updateROI);
+document.getElementById('roiCost').addEventListener('input',updateROI);
+document.getElementById('roiRevenueMode').addEventListener('change',updateROI);
+updateROI();
+
+/* ═══════════════════════════════════════════
+   TOOL 4 — HEALTH MONITOR
+═══════════════════════════════════════════ */
+const riskPill = {
+  Low:    {label:'Low Risk',    bg:'#DCE9E4', color:'#1B4F43'},
+  Medium: {label:'Watch',      bg:'#F3E7D0', color:'#6B4A08'},
+  High:   {label:'Act Now',    bg:'#F3DFDA', color:'#7A1F10'},
+  Critical:{label:'Critical',  bg:'#F3DFDA', color:'#7A1F10'}
+};
+
+document.getElementById('healthGrid').innerHTML = segments.map(s=>{
+  const risk = riskPill[s.recencyRisk] || riskPill['Low'];
+  const statusPill = riskPill[s.healthStatus] || riskPill['Low'];
+  const recPct = Math.round((s.recency/99)*100);
+  const respPct = Math.round((s.response/35.3)*100);
+  return `
+    <div class="health-card" style="border-top-color:${s.hex}">
+      <div class="health-top">
+        <div>
+          <div class="health-name" style="color:${s.hex}">${s.name}</div>
+          <div class="health-count">${s.customers} customers · ${s.pct}% of base</div>
+        </div>
+        <div class="health-pill" style="background:${statusPill.bg};color:${statusPill.color}">${s.healthStatus}</div>
+      </div>
+      <div class="health-metrics">
+        <div><div class="hm-val" style="color:${s.hex}">${s.recency.toFixed(0)}d</div><div class="hm-label">avg recency</div></div>
+        <div><div class="hm-val" style="color:${s.hex}">${s.response}%</div><div class="hm-label">response rate</div></div>
+        <div><div class="hm-val" style="color:${s.hex}">${fmtD(s.spend)}</div><div class="hm-label">avg spend</div></div>
+      </div>
+      <div style="margin-bottom:10px">
+        <div style="font-size:11px;color:var(--ink-faint);margin-bottom:4px;font-family:var(--mono)">Recency risk (higher = more dormant)</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${recPct}%;background:${s.hex};transition:width .7s ease"></div></div>
+      </div>
+      <div style="margin-bottom:14px">
+        <div style="font-size:11px;color:var(--ink-faint);margin-bottom:4px;font-family:var(--mono)">Campaign responsiveness</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${respPct}%;background:${s.hex};transition:width .7s ease"></div></div>
+      </div>
+      <div class="health-signal">${s.healthSignal}</div>
+    </div>
+  `;
+}).join('');
+
+// Checklist
+document.querySelectorAll('.checklist-item input').forEach(cb=>{
+  cb.addEventListener('change',()=>{
+    cb.closest('.checklist-item').classList.toggle('done', cb.checked);
+  });
+});
+</script>
+</body>
+</html>
