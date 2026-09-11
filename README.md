@@ -25,7 +25,7 @@
 
 ---
 
-## Table of Contents
+## Table of Contents-
 
 - [Business Problem](#business-problem)
 - [Decision Goal](#decision-goal)
