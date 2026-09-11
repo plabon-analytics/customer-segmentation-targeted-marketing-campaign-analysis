@@ -9,6 +9,14 @@
 
 ---
 
+### 🔗 Live Project Links
+|does  | Link |
+|---|---|
+| Interactive Dashboard | [View Live →](https://plabon-analytics.github.io/customer-segmentation-targeted-marketing-campaign-analysis/) |
+| Live Decision Tools | [Open Tools →](https://plabon-analytics.github.io/customer-segmentation-targeted-marketing-campaign-analysis/live-tools.html) |
+
+---
+
 > Analyzed **2,240 customers** across **29 behavioral features** to solve a real
 > marketing problem: campaigns achieving as low as **1.4% acceptance** because
 > every customer was treated the same.
