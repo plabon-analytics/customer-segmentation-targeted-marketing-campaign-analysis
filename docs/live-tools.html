@@ -101,6 +101,14 @@
   .result-strategy-heading{font-family:var(--serif);font-size:18px;margin-bottom:10px;font-weight:500;}
   .result-action{font-size:13.5px;line-height:1.6;color:var(--ink);}
   .match-note{margin-top:20px;padding-top:14px;border-top:1px solid var(--line);font-size:11.5px;color:var(--ink-faint);line-height:1.5;}
+  .ai-panel{margin-top:22px;padding-top:20px;border-top:1px solid var(--line);}
+  .ai-panel-head{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:10px;}
+  .ai-panel-title{font-family:var(--mono);font-size:11.5px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em;}
+  .ai-status{font-family:var(--mono);font-size:10.5px;color:var(--ink-faint);}
+  .ai-button{border:1px solid var(--ink);background:var(--ink);color:#fff;padding:9px 13px;cursor:pointer;font-family:var(--sans);font-size:12.5px;}
+  .ai-button:disabled{opacity:.55;cursor:wait;}
+  .ai-message{margin-top:12px;font-size:13.5px;line-height:1.65;white-space:pre-line;color:var(--ink);}
+  .ai-reason{margin-top:8px;font-size:11.5px;color:var(--ink-faint);}
 
   /* ═══════════════════════════════════════
      TOOL 2 — BUDGET ALLOCATOR
@@ -315,6 +323,15 @@
         <p class="result-action" id="resultAction"></p>
 
         <p class="match-note">Matched using nearest-centroid distance across recency, spend, purchases, income, and campaign acceptance — all normalised to 0–1. This approximates the K-Means logic from the notebook (n=2,205). Confidence = margin between closest and second-closest segment, expressed as a percentage of the maximum possible margin.</p>
+        <div class="ai-panel" aria-live="polite">
+          <div class="ai-panel-head">
+            <span class="ai-panel-title">Claude interpretation</span>
+            <span class="ai-status" id="aiStatus">Not requested</span>
+          </div>
+          <button class="ai-button" id="interpretButton" type="button">Interpret this match with Claude</button>
+          <p class="ai-message" id="aiMessage">The deterministic match above is ready. Run the local server to request a grounded natural-language interpretation.</p>
+          <p class="ai-reason" id="aiReason">The API key stays on the local server and is never sent to the browser.</p>
+        </div>
       </div>
     </div>
   </section>
@@ -602,6 +619,7 @@ const inSpend     = document.getElementById('inSpend');
 const inPurchases = document.getElementById('inPurchases');
 const inIncome    = document.getElementById('inIncome');
 const inCampaigns = document.getElementById('inCampaigns');
+let latestMatch = null;
 
 function updatePredictor(){
   const inp = {
@@ -623,6 +641,7 @@ function updatePredictor(){
   // confidence = how much better than second place, normalised
   const margin = withDist[1].dist - best.dist;
   const confidence = Math.min(100, Math.round((margin / (maxDist||1)) * 200));
+  latestMatch = {best, inp, confidence};
 
   const card = document.getElementById('resultCard');
   card.style.setProperty('--rc', best.hex);
@@ -651,6 +670,41 @@ function updatePredictor(){
 
 [inRecency,inSpend,inPurchases,inIncome,inCampaigns].forEach(el=>el.addEventListener('input',updatePredictor));
 updatePredictor();
+
+document.getElementById('interpretButton').addEventListener('click', async ()=>{
+  const button = document.getElementById('interpretButton');
+  const status = document.getElementById('aiStatus');
+  const message = document.getElementById('aiMessage');
+  const reason = document.getElementById('aiReason');
+  const {best, inp, confidence} = latestMatch;
+  button.disabled = true;
+  status.textContent = 'Requesting…';
+  message.textContent = '';
+  reason.textContent = 'Sending the matched segment context and profile to the local service.';
+  const segment = {
+    name: best.name, response: best.response, headline: best.headline,
+    strategyHeading: best.strategyHeading, action: best.action,
+    confidence
+  };
+  try {
+    const response = await fetch('/api/interpret', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({profile: inp, segment})
+    });
+    const result = await response.json();
+    if (!response.ok || result.status === 'error') throw new Error(result.message || 'Service error');
+    status.textContent = result.status === 'ai' ? `AI-generated · ${result.model}` : 'Deterministic fallback';
+    message.textContent = result.message;
+    reason.textContent = result.reason || 'Grounded in the supplied profile and deterministic segment context.';
+  } catch (error) {
+    status.textContent = 'Deterministic fallback';
+    message.textContent = `${best.strategyHeading}. ${best.action}`;
+    reason.textContent = 'Claude service unavailable. This recommendation is the existing deterministic segment playbook, not an AI response.';
+  } finally {
+    button.disabled = false;
+  }
+});
 
 /* ═══════════════════════════════════════════
    TOOL 2 — BUDGET ALLOCATOR

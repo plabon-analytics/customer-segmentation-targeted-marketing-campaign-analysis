@@ -47,6 +47,7 @@
 - [Business Recommendations](#business-recommendations)
 - [Technologies Used](#technologies-used)
 - [How To Run](#how-to-run)
+- [Agentic Segmentation V1](#agentic-segmentation-v1)
 - [Project Learnings](#project-learnings)
 - [Author](#author)
 
@@ -143,6 +144,7 @@ customer-segmentation-analysis/
 │       └── budget_allocation_evidence.png
 │
 ├── requirements.txt
+├── server.py
 └── README.md
 ```
 
@@ -393,6 +395,7 @@ support the recommended campaign budget priority.
 | Seaborn | 0.x | Statistical visualizations |
 | Scikit-learn | 1.x | K-Means clustering, PCA, Silhouette Score |
 | Datetime | Built-in | Date parsing and tenure calculation |
+| Python standard library HTTP server | Built-in | Keeps Anthropic credentials server-side for the local demo |
 
 > Run `pip show pandas scikit-learn seaborn matplotlib numpy`
 > in your environment to confirm exact installed versions
@@ -431,6 +434,48 @@ Sections 1 through 11 — run sequentially top to bottom.
 All outputs, charts, and segment assignments generate automatically.
 Do not skip sections — each one builds on the previous.
 ```
+
+---
+
+## Agentic Segmentation V1
+
+The live decision tools include a Version 1 conversational layer in the
+**Segment Predictor**. It preserves the deterministic nearest-centroid match
+across recency, spend, purchases, income, and campaign acceptance, then sends
+that match and its segment context to Claude for a concise interpretation and
+next step. Version 1 intentionally does not retrain the model or let the model
+override the match.
+
+### Run the local demo
+
+From the repository root:
+
+```bash
+export ANTHROPIC_API_KEY="your-key"       # optional; never put this in HTML
+export ANTHROPIC_MODEL="claude-3-5-haiku-latest"  # optional
+python server.py
+```
+
+Open <http://localhost:8000/docs/live-tools.html>, enter a customer profile,
+and select **Interpret this match with Claude**. The server proxies only the
+structured profile and matched segment context to Anthropic; the API key is
+never exposed to browser code. If the key is absent, the network is unavailable,
+or Anthropic returns an error, the UI labels the response **Deterministic
+fallback** and shows the existing segment playbook instead of pretending Claude
+responded.
+
+Do not send personally identifiable information in this demo profile. The
+profile fields are behavioral summaries, but any values submitted with an API
+key are processed by Anthropic according to your organization's Anthropic
+account and retention settings. For a static-only preview, open
+`docs/live-tools.html` directly; the deterministic predictor still works, while
+the Claude button will explicitly remain on fallback because no local API
+service is available.
+
+Example: a recently active customer with high spend and several accepted
+campaigns should match the segment whose supplied centroid is closest; Claude
+will explain that match using the observed response rate and the segment's
+existing strategy rather than inventing a new segment.
 
 ---
 
