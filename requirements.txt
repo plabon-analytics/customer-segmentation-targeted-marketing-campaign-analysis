@@ -4,4 +4,5 @@ matplotlib
 seaborn
 scikit-learn
 jupyter
-
+# The Claude integration uses Python's standard library HTTP client.
+# No API key or third-party SDK is bundled in the browser.
