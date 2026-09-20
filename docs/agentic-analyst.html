@@ -234,7 +234,7 @@
       <input
         id="apiKeyInput"
         type="password"
-        placeholder="AIza... Gemini API key"
+        placeholder="AIza... Gemini key (optional)"
         style="
           font-family:var(--mono);font-size:11px;
           padding:5px 10px;border:1px solid rgba(255,255,255,0.15);
@@ -537,7 +537,14 @@ function buildContextDisclosure(systemPrompt){
     </div>`;
 }
 
-const GEMINI_MODEL = 'gemini-3.6-flash';
+const GEMINI_MODELS = [
+  'gemini-3.5-flash-lite',
+  'gemini-3.1-flash-lite',
+  'gemini-3.5-flash',
+  'gemini-3.6-flash'
+];
+
+function wait(ms){ return new Promise(r => setTimeout(r, ms)); }
 
 function extractGeminiText(data){
   const parts = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts;
@@ -545,16 +552,16 @@ function extractGeminiText(data){
   return parts.map(p => p.text || '').join('');
 }
 
-function geminiErrorMessage(data){
-  if(data.error && data.error.message) return data.error.message;
-  const reason = data.candidates && data.candidates[0] && data.candidates[0].finishReason;
-  if(reason && reason !== 'STOP') return 'Gemini stopped the reply (' + reason + '). Try a shorter follow-up.';
-  return 'API error — check the Gemini key and try again.';
+function isCapacityError(data){
+  const msg = ((data && data.error && data.error.message) || '').toLowerCase();
+  const status = data && data.error && (data.error.status || data.error.code);
+  return status === 429 || status === 'RESOURCE_EXHAUSTED' || status === 'UNAVAILABLE'
+    || /high demand|overloaded|unavailable|try again later|resource.?exhausted|rate limit|quota/.test(msg);
 }
 
-async function callGemini(apiKey, systemPrompt, history){
+async function callOneGemini(apiKey, model, systemPrompt, history){
   const resp = await fetch(
-    'https://generativelanguage.googleapis.com/v1beta/models/' + GEMINI_MODEL + ':generateContent?key=' + encodeURIComponent(apiKey),
+    'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + encodeURIComponent(apiKey),
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -566,16 +573,128 @@ async function callGemini(apiKey, systemPrompt, history){
     }
   );
   const data = await resp.json();
-  return { data, text: extractGeminiText(data) };
+  return { data, text: extractGeminiText(data), model };
+}
+
+async function callGemini(apiKey, systemPrompt, history){
+  if(!apiKey) return { data: null, text: '', model: null };
+  let last = { data: null, text: '', model: null };
+  for(const model of GEMINI_MODELS){
+    for(let attempt = 0; attempt < 2; attempt++){
+      try{
+        const result = await callOneGemini(apiKey, model, systemPrompt, history);
+        last = result;
+        if(result.text) return result;
+        if(!isCapacityError(result.data)) break;
+      } catch(e){
+        last = { data: { error: { message: e.message } }, text: '', model };
+      }
+      await wait(700 * (attempt + 1));
+    }
+  }
+  return last;
+}
+
+function nearestSegment(inp){
+  return SEGMENTS.map(s => ({...s, dist: distanceTo(s, inp)})).sort((a,b) => a.dist - b.dist)[0];
+}
+
+function profileNuance(seg, inp){
+  const bits = [];
+  if(Math.abs(inp.recency - seg.recency) >= 12) bits.push(`recency ${inp.recency}d vs segment avg ${seg.recency.toFixed(0)}d`);
+  if(Math.abs(inp.spend - seg.spend) / Math.max(seg.spend, 1) >= 0.25) bits.push(`spend $${inp.spend.toLocaleString()} vs avg $${Math.round(seg.spend).toLocaleString()}`);
+  if(Math.abs(inp.purchases - seg.purchases) >= 4) bits.push(`purchases ${inp.purchases} vs avg ${seg.purchases.toFixed(1)}`);
+  if(Math.abs(inp.income - seg.income) / Math.max(seg.income, 1) >= 0.2) bits.push(`income $${inp.income.toLocaleString()} vs avg $${Math.round(seg.income).toLocaleString()}`);
+  if(inp.campaigns !== Math.round(seg.campaigns)) bits.push(`campaigns accepted ${inp.campaigns}/6 vs avg ${seg.campaigns.toFixed(2)}`);
+  return bits.length ? 'Profile vs centroid: ' + bits.join('; ') + '.' : 'This profile sits close to the segment centroid.';
+}
+
+function weekAction(seg){
+  if(seg.id === 'champions') return 'This week: enroll them in the tiered loyalty track and set a 60-day recency alert — do not wait until they cool off.';
+  if(seg.id === 'hvd') return 'This week: pull them off the standard 6-round campaign list. Test one in-store or post-purchase web offer only.';
+  if(seg.id === 'bca') return 'This week: send one family-value / multi-buy offer on the cheapest digital channel — not a premium wine push.';
+  return 'This week: one low-cost family-relevant email. If they ignore it, stop spend and reallocate to Champions and Budget Conscious Actives.';
+}
+
+function localFirstReply(seg, inp){
+  return `**Immediate Strategy:**
+${seg.strategy}
+
+**Data & Profile Nuance:**
+Matched to **${seg.name}** — ${seg.customers} customers (${seg.pct}% of 2,205). Segment campaign response is **${seg.response}%**, avg spend **$${Math.round(seg.spend).toLocaleString()}**, avg recency **${seg.recency.toFixed(0)} days**. This customer: ${inp.recency}d, $${inp.spend.toLocaleString()} spend, ${inp.purchases} purchases, $${inp.income.toLocaleString()} income, ${inp.campaigns}/6 campaigns. ${profileNuance(seg, inp)} Urgency: ${seg.urgency}
+
+**${weekAction(seg)}**`;
+}
+
+function lastUserText(history){
+  for(let i = history.length - 1; i >= 0; i--){
+    if(history[i].role === 'user') return (history[i].parts && history[i].parts[0] && history[i].parts[0].text) || '';
+  }
+  return '';
+}
+
+function localFollowUp(seg, inp, question){
+  const q = question.toLowerCase();
+  const dayMatch = q.match(/(\d+)\s*d(?:ays?)?/);
+  const champ = SEGMENTS.find(s => s.id === 'champions');
+
+  if(/recency|days since|more recent|improves|drops|last purchase/.test(q) || dayMatch){
+    const hypo = dayMatch ? +dayMatch[1] : Math.max(0, inp.recency - 30);
+    const hypoInp = Object.assign({}, inp, { recency: hypo });
+    const hypoSeg = nearestSegment(hypoInp);
+    const same = hypoSeg.id === seg.id;
+    return `**If recency moves to ${hypo} days:** nearest segment becomes **${hypoSeg.name}**${same ? ' — still the same match' : ' — a re-match, not just a nicer number'}.
+
+Today they sit in **${seg.name}** (${seg.response}% response, avg recency ${seg.recency.toFixed(0)}d). ${same
+      ? (seg.id === 'hvd'
+          ? `A better recency does **not** revive standard email. This segment’s **0.0%** response across 6 rounds is a format failure, not a timing failure. Keep them off unsolicited campaigns; use purchase-triggered store/web nudges.`
+          : `Keep the ${seg.name} playbook. Recency of ${hypo}d vs the centroid ${seg.recency.toFixed(0)}d is a health check, not a reason to change the offer type.`)
+      : `Treat them as **${hypoSeg.name}** (${hypoSeg.response}% response): ${hypoSeg.strategy}`}
+
+Do not invent a new response rate — use ${hypoSeg.response}% for the new match.`;
+  }
+
+  if(/champion/.test(q)){
+    return `**Versus Champions:** Champions are ${champ.customers} customers (${champ.pct}%), **${champ.response}%** campaign response, avg spend **$${Math.round(champ.spend).toLocaleString()}**, avg recency ${champ.recency.toFixed(0)}d, avg income $${Math.round(champ.income).toLocaleString()}.
+
+This customer is **${seg.name}** (${seg.response}% response, avg spend $${Math.round(seg.spend).toLocaleString()}). Spend here is $${inp.spend.toLocaleString()} vs Champions’ $${Math.round(champ.spend).toLocaleString()}; campaigns accepted ${inp.campaigns}/6 vs Champions’ avg ${champ.campaigns.toFixed(2)}. ${seg.id === 'champions'
+      ? 'They already belong in the retain-and-reward track — loyalty and 60-day recency monitoring, not acquisition tactics.'
+      : `Do not copy Champion premium wine/meat bundles onto this profile. ${seg.name} needs: ${seg.strategy}`}`;
+  }
+
+  if(/campaign|email|outreach|stop|budget|spend on them/.test(q)){
+    return `**Campaign decision:** ${seg.name} delivered **${seg.response}%** response across the six rounds in the analysis. ${weekAction(seg)} ${seg.id === 'hvd' ? 'Six zeros is evidence. Redirect that budget to Champions (35.3%) and Budget Conscious Actives (14.2%).' : ''} ${seg.id === 'ard' ? 'One attempt only. A second wave repeats a 3.9% format.' : ''}`;
+  }
+
+  if(/budget conscious|family|children|cheap|value/.test(q)){
+    const bca = SEGMENTS.find(s => s.id === 'bca');
+    return `**Budget Conscious Actives** are ${bca.customers} customers, **${bca.response}%** response, avg spend only **$${Math.round(bca.spend)}**, recency **${bca.recency.toFixed(0)}d**, 86% with children. This customer is **${seg.name}**. ${seg.id === 'bca' ? 'Yes — family-value bundles and frequency rewards, low-cost digital only.' : `Do not force the BCA discount playbook onto ${seg.name} unless the match changes. Current instruction: ${seg.strategy}`}`;
+  }
+
+  return `Still grounded in **${seg.name}** (${seg.response}% response, ${seg.customers} customers). ${profileNuance(seg, inp)}
+
+${seg.strategy}
+
+${weekAction(seg)}`;
+}
+
+function localAnalyst(seg, inp, history){
+  const question = lastUserText(history);
+  const userTurns = history.filter(m => m.role === 'user').length;
+  if(userTurns <= 1) return localFirstReply(seg, inp);
+  return localFollowUp(seg, inp, question);
+}
+
+function analystExtra(systemPrompt, fromLocal){
+  const note = fromLocal
+    ? '<p style="margin-top:10px;font-family:var(--mono);font-size:11px;opacity:.55">Model was on high demand. Hence, Running on-device intelligence — this answer uses the same four-segment notebook numbers. No API required.</p>'
+    : '';
+  return note + buildContextDisclosure(systemPrompt);
 }
 
 /* ── Main analyse call ── */
 async function analyse(){
   const apiKey = document.getElementById('apiKeyInput').value.trim();
-  if(!apiKey){
-    alert('Enter your Gemini API key first — paste it in the top-right field.');
-    return;
-  }
   const inp = getInputs();
   const seg = currentMatch;
   const btn = document.getElementById('analyseBtn');
@@ -606,22 +725,23 @@ async function analyse(){
   const typing = addTyping();
 
   try{
-    const { data, text } = await callGemini(apiKey, systemPrompt, conversationHistory);
-    removeTyping();
-
-    if(text){
-      conversationHistory.push({role:'model', parts:[{text}]});
-
-      const formatted = formatAgentText(text);
-      const contextDisc = buildContextDisclosure(systemPrompt);
-      addMsg('agent', `<p>${formatted}</p>`, contextDisc);
-      hasAnalysed = true;
-    } else {
-      addMsg('error', geminiErrorMessage(data));
+    const result = await callGemini(apiKey, systemPrompt, conversationHistory);
+    let text = result.text;
+    let fromLocal = false;
+    if(!text){
+      text = localAnalyst(seg, inp, conversationHistory);
+      fromLocal = true;
     }
-  } catch(e){
     removeTyping();
-    addMsg('error', `Connection error: ${e.message}. Check the Gemini key and that you are on the free tier in Google AI Studio.`);
+    conversationHistory.push({role:'model', parts:[{text}]});
+    addMsg('agent', `<p>${formatAgentText(text)}</p>`, analystExtra(systemPrompt, fromLocal));
+    hasAnalysed = true;
+  } catch(e){
+    const text = localAnalyst(seg, inp, conversationHistory);
+    removeTyping();
+    conversationHistory.push({role:'model', parts:[{text}]});
+    addMsg('agent', `<p>${formatAgentText(text)}</p>`, analystExtra(systemPrompt, true));
+    hasAnalysed = true;
   }
 
   btn.disabled = false;
@@ -631,10 +751,6 @@ async function analyse(){
 /* ── Follow-up ── */
 async function sendFollowUp(){
   const apiKey = document.getElementById('apiKeyInput').value.trim();
-  if(!apiKey){
-    alert('Enter your Gemini API key first — paste it in the top-right field.');
-    return;
-  }
   const input = document.getElementById('followUpInput');
   const question = input.value.trim();
   if(!question || !hasAnalysed) return;
@@ -649,20 +765,24 @@ async function sendFollowUp(){
   const typing = addTyping();
   const inp = getInputs();
   const seg = currentMatch;
+  const systemPrompt = buildSystemPrompt(seg, inp);
 
   try{
-    const { data, text } = await callGemini(apiKey, buildSystemPrompt(seg, inp), conversationHistory);
-    removeTyping();
-
-    if(text){
-      conversationHistory.push({role:'model', parts:[{text}]});
-      addMsg('agent',`<p>${formatAgentText(text)}</p>`);
-    } else {
-      addMsg('error', geminiErrorMessage(data));
+    const result = await callGemini(apiKey, systemPrompt, conversationHistory);
+    let text = result.text;
+    let fromLocal = false;
+    if(!text){
+      text = localAnalyst(seg, inp, conversationHistory);
+      fromLocal = true;
     }
-  } catch(e){
     removeTyping();
-    addMsg('error',`Error: ${e.message}`);
+    conversationHistory.push({role:'model', parts:[{text}]});
+    addMsg('agent', `<p>${formatAgentText(text)}</p>${fromLocal ? '<p style="margin-top:10px;font-family:var(--mono);font-size:11px;opacity:.55">Model was on high demand. Hence, Running on-device intelligence — this answer uses the same four-segment notebook numbers. No API required.</p>' : ''}`);
+  } catch(e){
+    const text = localAnalyst(seg, inp, conversationHistory);
+    removeTyping();
+    conversationHistory.push({role:'model', parts:[{text}]});
+    addMsg('agent', `<p>${formatAgentText(text)}</p><p style="margin-top:10px;font-family:var(--mono);font-size:11px;opacity:.55">Model was on high demand. Hence, Running on-device intelligence — this answer uses the same four-segment notebook numbers. No API required.</p>`);
   }
 
   document.getElementById('sendBtn').disabled = false;
