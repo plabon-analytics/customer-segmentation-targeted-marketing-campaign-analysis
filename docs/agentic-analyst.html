@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Segmentation Analyst · Plabon Roy</title>
+<style>
+  :root{
+    --paper:#F0F1EA;
+    --paper-raised:#FFFFFF;
+    --line:#D7D8CF;
+    --line-strong:#B9BBAF;
+    --ink:#181A17;
+    --ink-soft:#5B5D53;
+    --ink-faint:#8B8D80;
+    --champions:#B8862B; --champions-soft:#F3E7D0;
+    --hvd:#A23E2E;       --hvd-soft:#F3DFDA;
+    --bca:#2F6B5E;       --bca-soft:#DCE9E4;
+    --ard:#5B6470;       --ard-soft:#E2E4E7;
+    --agent:#1A1F2E;     --agent-soft:#E8EAF0;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Helvetica Neue",Helvetica,Arial,sans-serif;
+    --mono:"SF Mono","Cascadia Mono",Consolas,"Liberation Mono",Menlo,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  body{background:var(--paper);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;}
+  ::selection{background:#D9CBA3;}
+
+  /* ── Nav ── */
+  nav{
+    position:sticky;top:0;z-index:100;
+    background:rgba(26,31,46,0.97);
+    backdrop-filter:blur(8px);
+    border-bottom:1px solid rgba(255,255,255,0.08);
+  }
+  .nav-inner{
+    max-width:1180px;margin:0 auto;padding:0 28px;
+    display:flex;align-items:center;justify-content:space-between;height:52px;
+  }
+  .nav-brand{display:flex;align-items:center;gap:10px;}
+  .nav-dot{width:8px;height:8px;border-radius:50%;background:#4ADE80;animation:pulse 2s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+  .nav-brand-text{font-family:var(--mono);font-size:12px;color:rgba(255,255,255,0.7);}
+  .nav-brand-text b{color:#fff;}
+  .nav-links{display:flex;align-items:center;gap:18px;}
+  .nav-link{font-size:12.5px;color:rgba(255,255,255,0.5);text-decoration:none;transition:color .15s;}
+  .nav-link:hover{color:#fff;}
+  .nav-badge{font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:2px;background:rgba(74,222,128,0.15);color:#4ADE80;border:1px solid rgba(74,222,128,0.25);}
+
+  .wrap{max-width:1180px;margin:0 auto;padding:0 28px;}
+
+  /* ── Hero ── */
+  header.hero{
+    background:var(--agent);
+    padding:52px 0 44px;
+    border-bottom:1px solid rgba(255,255,255,0.06);
+  }
+  .hero-kicker{font-family:var(--mono);font-size:11.5px;color:rgba(255,255,255,0.4);letter-spacing:.06em;text-transform:uppercase;margin-bottom:16px;}
+  .hero-kicker span{color:#4ADE80;}
+  h1.hero-title{font-family:var(--serif);font-weight:500;font-size:clamp(26px,3.2vw,40px);line-height:1.14;color:#fff;margin-bottom:14px;max-width:740px;}
+  .hero-sub{font-size:14.5px;color:rgba(255,255,255,0.5);line-height:1.7;max-width:600px;margin-bottom:28px;}
+  .hero-pills{display:flex;flex-wrap:wrap;gap:8px;}
+  .hero-pill{font-family:var(--mono);font-size:11px;padding:4px 10px;border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.5);border-radius:2px;}
+
+  /* ── Main layout ── */
+  .main-grid{display:grid;grid-template-columns:380px 1fr;gap:0;min-height:calc(100vh - 180px);}
+
+  /* ── Left panel — inputs ── */
+  .left-panel{border-right:1px solid var(--line);padding:28px;background:var(--paper-raised);position:sticky;top:52px;height:calc(100vh - 52px);overflow-y:auto;}
+  .panel-title{font-family:var(--mono);font-size:11px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:20px;display:flex;align-items:center;gap:8px;}
+  .panel-title::after{content:'';flex:1;height:1px;background:var(--line);}
+
+  .field{margin-bottom:20px;}
+  .field-label{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;color:var(--ink-soft);margin-bottom:8px;}
+  .field-val{font-family:var(--mono);font-size:15px;font-weight:600;color:var(--ink);}
+  input[type=range]{width:100%;-webkit-appearance:none;height:2px;background:var(--line-strong);outline:none;cursor:pointer;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--agent);cursor:pointer;border:2px solid var(--paper-raised);box-shadow:0 0 0 1px var(--agent);}
+  .field-range{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--ink-faint);margin-top:5px;}
+
+  /* segment match preview */
+  .match-preview{border:1px solid var(--line);border-top:4px solid var(--mc,#888);padding:16px;margin:22px 0;background:var(--paper);transition:border-color .3s;}
+  .match-preview-name{font-weight:600;font-size:14.5px;margin-bottom:4px;}
+  .match-preview-conf{font-family:var(--mono);font-size:11.5px;color:var(--ink-faint);}
+  .conf-track{height:4px;background:var(--line);margin-top:7px;}
+  .conf-fill{height:100%;background:var(--mc,#888);transition:width .4s ease;}
+
+  /* mini dist bars */
+  .dist-title{font-family:var(--mono);font-size:10px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;}
+  .dist-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+  .dist-name{font-size:11.5px;width:130px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .dist-track{flex:1;height:5px;background:var(--line);}
+  .dist-fill{height:100%;transition:width .4s ease;}
+  .dist-val{font-family:var(--mono);font-size:10px;color:var(--ink-faint);width:28px;text-align:right;}
+
+  .analyse-btn{
+    width:100%;padding:14px;
+    background:var(--agent);color:#fff;
+    border:none;font-family:var(--sans);font-size:14px;font-weight:600;
+    cursor:pointer;letter-spacing:.01em;
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    transition:opacity .15s;margin-top:4px;
+  }
+  .analyse-btn:hover{opacity:.88;}
+  .analyse-btn:disabled{opacity:.45;cursor:not-allowed;}
+  .analyse-btn .btn-icon{font-size:16px;}
+
+  /* ── Right panel — conversation ── */
+  .right-panel{display:flex;flex-direction:column;height:calc(100vh - 52px);position:sticky;top:52px;}
+  .convo-area{flex:1;overflow-y:auto;padding:28px;}
+  .convo-empty{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    height:100%;text-align:center;color:var(--ink-faint);gap:12px;
+  }
+  .convo-empty-icon{font-size:36px;opacity:.35;}
+  .convo-empty-title{font-family:var(--serif);font-size:20px;color:var(--ink-soft);}
+  .convo-empty-sub{font-size:13.5px;max-width:340px;line-height:1.6;}
+
+  /* messages */
+  .msg{margin-bottom:22px;animation:fadeUp .3s ease;}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+  .msg-role{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px;}
+  .msg.user .msg-role{color:var(--ink-faint);}
+  .msg.agent .msg-role{color:var(--agent);font-weight:600;}
+
+  .msg.user .msg-body{
+    background:var(--paper-raised);border:1px solid var(--line);
+    padding:14px 16px;font-size:13.5px;line-height:1.6;color:var(--ink);
+    max-width:85%;
+  }
+  .msg.agent .msg-body{
+    background:var(--agent);color:#fff;
+    padding:18px 20px;font-size:14px;line-height:1.7;
+    max-width:100%;
+  }
+  .msg.agent .msg-body b{color:#4ADE80;}
+  .msg.agent .msg-body .action-line{
+    margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.1);
+    font-family:var(--mono);font-size:12px;color:rgba(255,255,255,0.6);
+  }
+
+  /* segment context card inside agent message */
+  .seg-context{
+    background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);
+    padding:12px 14px;margin:12px 0;
+    display:grid;grid-template-columns:repeat(3,1fr);gap:8px;
+  }
+  .sc-item b{display:block;font-family:var(--mono);font-size:14px;color:#4ADE80;}
+  .sc-item span{font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px;display:block;}
+
+  /* typing indicator */
+  .typing{display:flex;align-items:center;gap:5px;padding:16px 20px;background:var(--agent);width:fit-content;}
+  .typing-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.4);animation:blink 1.2s infinite;}
+  .typing-dot:nth-child(2){animation-delay:.2s;}
+  .typing-dot:nth-child(3){animation-delay:.4s;}
+  @keyframes blink{0%,100%{opacity:.3;}50%{opacity:1;}}
+
+  /* error */
+  .msg.error .msg-body{background:var(--hvd-soft);border:1px solid var(--hvd);color:var(--ink);padding:14px 16px;font-size:13.5px;}
+
+  /* ── Input bar ── */
+  .input-bar{
+    border-top:1px solid var(--line);padding:16px 28px;
+    background:var(--paper-raised);
+    display:flex;gap:10px;align-items:flex-end;
+  }
+  .input-bar textarea{
+    flex:1;border:1px solid var(--line);background:var(--paper);
+    font-family:var(--sans);font-size:13.5px;color:var(--ink);
+    padding:10px 14px;resize:none;outline:none;height:44px;max-height:120px;
+    overflow-y:auto;line-height:1.5;
+  }
+  .input-bar textarea:focus{border-color:var(--agent);}
+  .input-bar textarea::placeholder{color:var(--ink-faint);}
+  .send-btn{
+    width:44px;height:44px;flex-shrink:0;
+    background:var(--agent);border:none;cursor:pointer;
+    color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center;
+    transition:opacity .15s;
+  }
+  .send-btn:hover{opacity:.85;}
+  .send-btn:disabled{opacity:.35;cursor:not-allowed;}
+
+  /* ── Context disclosure ── */
+  .context-disclosure{
+    margin:12px 0 0;border:1px solid rgba(255,255,255,0.08);
+  }
+  .context-toggle{
+    width:100%;background:rgba(255,255,255,0.04);border:none;
+    padding:8px 14px;font-family:var(--mono);font-size:10.5px;
+    color:rgba(255,255,255,0.4);cursor:pointer;text-align:left;
+    display:flex;justify-content:space-between;
+  }
+  .context-toggle:hover{background:rgba(255,255,255,0.07);}
+  .context-body{
+    display:none;padding:10px 14px;
+    font-family:var(--mono);font-size:10.5px;color:rgba(255,255,255,0.35);
+    line-height:1.6;white-space:pre-wrap;max-height:180px;overflow-y:auto;
+  }
+  .context-body.open{display:block;}
+
+  /* ── Expo banner ── */
+  .expo-banner{
+    background:linear-gradient(135deg,#1A1F2E 0%,#2D3250 100%);
+    border-bottom:1px solid rgba(255,255,255,0.06);
+    padding:14px 28px;
+    display:flex;align-items:center;justify-content:space-between;
+    flex-wrap:wrap;gap:10px;
+  }
+  .expo-banner p{font-size:13px;color:rgba(255,255,255,0.55);line-height:1.5;}
+  .expo-banner p b{color:rgba(255,255,255,0.85);}
+  .expo-future{font-family:var(--mono);font-size:11px;color:rgba(255,255,255,0.3);max-width:400px;line-height:1.5;}
+
+  @media(max-width:860px){
+    .main-grid{grid-template-columns:1fr;}
+    .left-panel,.right-panel{position:static;height:auto;}
+    .right-panel{min-height:500px;}
+    .nav-links .nav-badge{display:none;}
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <div class="nav-brand">
+      <div class="nav-dot"></div>
+      <div class="nav-brand-text">Agentic Segmentation Analyst — <b>Plabon Roy</b></div>
+    </div>
+    <div class="nav-links">
+      <a class="nav-link" href="index.html">← Dashboard</a>
+      <a class="nav-link" href="live-tools.html">Live Tools</a>
+      <span class="nav-badge">AI POWERED</span>
+      <input
+        id="apiKeyInput"
+        type="password"
+        placeholder="AIza... Gemini API key"
+        style="
+          font-family:var(--mono);font-size:11px;
+          padding:5px 10px;border:1px solid rgba(255,255,255,0.15);
+          background:rgba(255,255,255,0.06);color:#fff;
+          outline:none;width:200px;
+        ">
+    </div>
+  </div>
+</nav>
+
+<div class="expo-banner wrap">
+  <p><b>Project Expo Demo — Version 1.</b> Customer profile → K-Means segment match → AI analyst interpretation. Grounded entirely in the real segment data from the analysis. No generic AI responses.</p>
+  <div class="expo-future">Future: upload any CSV → full agentic pipeline → segment any customer base automatically</div>
+</div>
+
+<header class="hero">
+  <div class="wrap">
+    <p class="hero-kicker">Customer Segmentation — <span>Agentic Layer</span></p>
+    <h1 class="hero-title">Describe a customer. Get an analyst's answer — not a chart.</h1>
+    <p class="hero-sub">Enter a customer profile using the sliders. The system matches them to one of four behaviorally distinct segments discovered by K-Means clustering — then an AI consultant tells you exactly what to do about it, grounded in the real segment data from the analysis.</p>
+    <div class="hero-pills">
+      <span class="hero-pill">K-Means · K=4</span>
+      <span class="hero-pill">RFM Scored · 5 dimensions</span>
+      <span class="hero-pill">2,205 customers</span>
+      <span class="hero-pill">Grounded · No hallucination</span>
+      <span class="hero-pill">Conversational follow-up</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="main-grid">
+
+    <!-- ── LEFT — inputs ── -->
+    <div class="left-panel">
+      <div class="panel-title">Customer Profile</div>
+
+      <div class="field">
+        <div class="field-label">Days since last purchase <span class="field-val" id="vR">50</span></div>
+        <input type="range" id="sR" min="0" max="99" value="50">
+        <div class="field-range"><span>0 — just bought</span><span>99 days</span></div>
+      </div>
+      <div class="field">
+        <div class="field-label">Total spend <span class="field-val" id="vS">$600</span></div>
+        <input type="range" id="sS" min="0" max="2500" step="10" value="600">
+        <div class="field-range"><span>$0</span><span>$2,500</span></div>
+      </div>
+      <div class="field">
+        <div class="field-label">Number of purchases <span class="field-val" id="vP">14</span></div>
+        <input type="range" id="sP" min="0" max="30" value="14">
+        <div class="field-range"><span>0</span><span>30</span></div>
+      </div>
+      <div class="field">
+        <div class="field-label">Annual income <span class="field-val" id="vI">$52,000</span></div>
+        <input type="range" id="sI" min="0" max="150000" step="1000" value="52000">
+        <div class="field-range"><span>$0</span><span>$150,000</span></div>
+      </div>
+      <div class="field">
+        <div class="field-label">Campaigns accepted (of 6) <span class="field-val" id="vC">1</span></div>
+        <input type="range" id="sC" min="0" max="6" value="1">
+        <div class="field-range"><span>0 — never responded</span><span>6 — all</span></div>
+      </div>
+
+      <div class="match-preview" id="matchPreview">
+        <div class="match-preview-name" id="matchName">—</div>
+        <div class="match-preview-conf" id="matchConf">Move a slider to match</div>
+        <div class="conf-track"><div class="conf-fill" id="confFill" style="width:0%"></div></div>
+      </div>
+
+      <div class="dist-title">Distance to each segment</div>
+      <div id="distBars"></div>
+
+      <button class="analyse-btn" id="analyseBtn" disabled>
+        <span class="btn-icon">⚡</span> Analyse This Customer
+      </button>
+    </div>
+
+    <!-- ── RIGHT — conversation ── -->
+    <div class="right-panel">
+      <div class="convo-area" id="convoArea">
+        <div class="convo-empty" id="convoEmpty">
+          <div class="convo-empty-icon">◎</div>
+          <div class="convo-empty-title">Ready to analyse</div>
+          <div class="convo-empty-sub">Set a customer profile using the sliders on the left, then click Analyse. The AI consultant will tell you exactly what to do — grounded in your segment data.</div>
+        </div>
+      </div>
+      <div class="input-bar" id="inputBar" style="display:none">
+        <textarea id="followUpInput" placeholder="Ask a follow-up — 'What if their recency improves?' or 'How do they compare to Champions?'" rows="1"></textarea>
+        <button class="send-btn" id="sendBtn" title="Send">↑</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════
+   SEGMENT DATA — from actual notebook
+═══════════════════════════════════════ */
+const SEGMENTS = [
+  {
+    id:'champions', name:'Champions',
+    hex:'#B8862B', soft:'#F3E7D0',
+    customers:657, pct:29.8, response:35.3,
+    recency:48.22, spend:1179, purchases:21.3, income:69631, campaigns:1.21,
+    priority:1,
+    profile:'657 customers (29.8% of base). Avg recency 48 days. Avg spend $1,179. Avg purchases 21.3. Avg income $69,631. Campaign response rate 35.3%. 51% have children. Top spend categories: wines ($616 avg), meat products ($328 avg). Customer tenure ~380 days. Use all three channels actively: web, store, catalog.',
+    strategy:'RETAIN AND REWARD. Tiered loyalty program — points per purchase, early product access, exclusive events. Lead campaigns with premium wine and meat bundles. Deliver across web, store, and catalog simultaneously. Monitor recency monthly — trigger re-engagement the moment any Champion exceeds 60 days without a purchase.',
+    urgency:'Low — performing as expected. Primary risk is complacency.'
+  },
+  {
+    id:'hvd', name:'High Value Disengaged',
+    hex:'#A23E2E', soft:'#F3DFDA',
+    customers:482, pct:21.9, response:0.0,
+    recency:50.51, spend:931, purchases:20.9, income:65277, campaigns:0.00,
+    priority:3,
+    profile:'482 customers (21.9% of base). Avg recency 50 days. Avg spend $931. Avg purchases 20.9. Avg income $65,277. Campaign response rate 0.0% — across all 6 campaign rounds. 64% have children. High-income buyers who purchase through entirely self-directed behavior. Current campaign format has definitively failed to reach them.',
+    strategy:'STOP WASTING. START TESTING. Halt all standard campaign spend immediately — 6 rounds of 0.0% is conclusive. Redirect freed budget to Champions and Budget Conscious Actives. Test behavior-triggered offers at point of purchase only — in-store point-of-sale and web nudges triggered by an actual purchase, not unsolicited outreach.',
+    urgency:'Critical — confirmed budget waste across 6 rounds. Standard campaigns must stop today.'
+  },
+  {
+    id:'bca', name:'Budget Conscious Actives',
+    hex:'#2F6B5E', soft:'#DCE9E4',
+    customers:548, pct:24.8, response:14.2,
+    recency:24.06, spend:108, purchases:8.2, income:34741, campaigns:0.24,
+    priority:2,
+    profile:'548 customers (24.8% of base). Avg recency 24 days — most recently active segment. Avg spend $108. Avg purchases 8.2. Avg income $34,741. Campaign response rate 14.2%. 86% have children — household budget constraints are the primary barrier to higher spend, not brand disinterest.',
+    strategy:'UNLOCK CONSTRAINED POTENTIAL. Family-value bundle campaigns — multi-buy deals, limited-time discounts that make higher spend financially viable. Low-cost digital and web-exclusive channels only. Frequency reward program: buy 8 times, earn a reward — aligned with their natural purchase count.',
+    urgency:'Good — most active segment. Act before financial constraints push them toward competitors.'
+  },
+  {
+    id:'ard', name:'At-Risk Dormants',
+    hex:'#5B6470', soft:'#E2E4E7',
+    customers:518, pct:23.5, response:3.9,
+    recency:75.31, spend:109, purchases:8.3, income:35347, campaigns:0.12,
+    priority:4,
+    profile:'518 customers (23.5% of base). Avg recency 75.31 days — approaching the 90-day churn threshold. Avg spend $109. Avg purchases 8.3. Avg income $35,347. Campaign response rate 3.9%. 88% have children. Near-zero campaign engagement across all 6 rounds.',
+    strategy:'ONE ATTEMPT THEN REALLOCATE. Send one single low-cost family-relevant email. If they respond — move to Budget Conscious Active strategies immediately. If they do not respond — formally classify as churned and stop all spend. Redirect freed budget to Champions and Budget Conscious Actives. Do not send a second campaign.',
+    urgency:'High — 75-day recency means the recovery window is narrowing fast. Act within the week.'
+  }
+];
+
+const RANGES = {
+  recency:[0,99], spend:[0,2500],
+  purchases:[0,30], income:[0,150000], campaigns:[0,6]
+};
+
+function norm(key,val){ const [mn,mx]=RANGES[key]; return (val-mn)/(mx-mn); }
+
+function getInputs(){
+  return {
+    recency:+document.getElementById('sR').value,
+    spend:+document.getElementById('sS').value,
+    purchases:+document.getElementById('sP').value,
+    income:+document.getElementById('sI').value,
+    campaigns:+document.getElementById('sC').value
+  };
+}
+
+function distanceTo(seg,inp){
+  return Math.sqrt(
+    Math.pow(norm('recency',seg.recency)-norm('recency',inp.recency),2)+
+    Math.pow(norm('spend',seg.spend)-norm('spend',inp.spend),2)+
+    Math.pow(norm('purchases',seg.purchases)-norm('purchases',inp.purchases),2)+
+    Math.pow(norm('income',seg.income)-norm('income',inp.income),2)+
+    Math.pow(norm('campaigns',seg.campaigns)-norm('campaigns',inp.campaigns),2)
+  );
+}
+
+/* ── Sliders ── */
+let currentMatch = null;
+let conversationHistory = [];
+let hasAnalysed = false;
+
+function updateSliders(){
+  const inp = getInputs();
+  document.getElementById('vR').textContent = inp.recency+' days';
+  document.getElementById('vS').textContent = '$'+inp.spend.toLocaleString();
+  document.getElementById('vP').textContent = inp.purchases;
+  document.getElementById('vI').textContent = '$'+inp.income.toLocaleString();
+  document.getElementById('vC').textContent = inp.campaigns;
+
+  const withDist = SEGMENTS.map(s=>({...s,dist:distanceTo(s,inp)})).sort((a,b)=>a.dist-b.dist);
+  currentMatch = withDist[0];
+  const maxDist = Math.max(...withDist.map(x=>x.dist));
+  const margin = withDist[1].dist - withDist[0].dist;
+  const confidence = Math.min(98,Math.round((margin/(maxDist||1))*200));
+
+  const preview = document.getElementById('matchPreview');
+  preview.style.setProperty('--mc',currentMatch.hex);
+  document.getElementById('matchName').textContent = currentMatch.name;
+  document.getElementById('matchName').style.color = currentMatch.hex;
+  document.getElementById('matchConf').textContent = `Match confidence: ${confidence}%`;
+  document.getElementById('confFill').style.width = confidence+'%';
+
+  document.getElementById('distBars').innerHTML = withDist.map(s=>`
+    <div class="dist-row">
+      <div class="dist-name" style="color:${s.id===currentMatch.id?s.hex:''};font-weight:${s.id===currentMatch.id?'600':'400'}">${s.name}</div>
+      <div class="dist-track"><div class="dist-fill" style="width:${maxDist?(1-s.dist/maxDist)*100:0}%;background:${s.hex}"></div></div>
+      <div class="dist-val">${(maxDist?(1-s.dist/maxDist):0).toFixed(2)}</div>
+    </div>
+  `).join('');
+
+  document.getElementById('analyseBtn').disabled = false;
+}
+
+['sR','sS','sP','sI','sC'].forEach(id=>
+  document.getElementById(id).addEventListener('input',updateSliders)
+);
+updateSliders();
+
+/* ── Build system prompt ── */
+function buildSystemPrompt(seg, inp){
+  return `You are a senior marketing consultant and data analyst. You have been given the results of a K-Means customer segmentation analysis conducted on 2,205 customers across 5 behavioral dimensions (recency, spend, purchases, income, campaign acceptance). Your job is to give direct, confident, action-first advice — like a consultant who has 10 minutes before a board meeting.
+
+ANALYSIS RESULTS — THE FOUR SEGMENTS:
+${SEGMENTS.map(s=>`
+${s.name} (Cluster, Priority ${s.priority}):
+Profile: ${s.profile}
+Strategy: ${s.strategy}
+Urgency: ${s.urgency}
+`).join('')}
+
+CURRENT CUSTOMER BEING ANALYSED:
+Recency: ${inp.recency} days since last purchase
+Total spend: $${inp.spend.toLocaleString()}
+Number of purchases: ${inp.purchases}
+Annual income: $${inp.income.toLocaleString()}
+Campaigns accepted: ${inp.campaigns} out of 6
+
+MATCHED SEGMENT: ${seg.name} (confidence based on nearest-centroid distance)
+
+YOUR RULES:
+1. Be direct and action-first. Lead with what to DO, not what the numbers mean.
+2. Use specific numbers from the segment data — never generic advice.
+3. Reference the segment's actual response rate, spend, and recency when relevant.
+4. If the customer's profile is notably different from their matched segment average, call it out — it matters.
+5. End every first response with one specific campaign action the business should take THIS WEEK.
+6. For follow-up questions, stay grounded in the segment data. Never invent statistics.
+7. Keep responses under 220 words. Punchy. No filler.
+8. Never say "I" or "as an AI". Speak as a consultant.`;
+}
+
+/* ── Render helpers ── */
+function addMsg(role, html, extra=''){
+  const empty = document.getElementById('convoEmpty');
+  if(empty) empty.remove();
+
+  const area = document.getElementById('convoArea');
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  div.innerHTML = `
+    <div class="msg-role">${role==='agent'?'⚡ Analyst':'You'}</div>
+    <div class="msg-body">${html}${extra}</div>
+  `;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+  return div;
+}
+
+function addTyping(){
+  const empty = document.getElementById('convoEmpty');
+  if(empty) empty.remove();
+  const area = document.getElementById('convoArea');
+  const div = document.createElement('div');
+  div.className = 'msg agent';
+  div.id = 'typingMsg';
+  div.innerHTML = `
+    <div class="msg-role">⚡ Analyst</div>
+    <div class="typing">
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+    </div>`;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+  return div;
+}
+
+function removeTyping(){
+  const t = document.getElementById('typingMsg');
+  if(t) t.remove();
+}
+
+function formatAgentText(text){
+  // Bold **text** and *text*, line breaks
+  return text
+    .replace(/\*\*(.+?)\*\*/g,'<b>$1</b>')
+    .replace(/\*(.+?)\*/g,'<b>$1</b>')
+    .replace(/\n\n/g,'</p><p style="margin-top:10px">')
+    .replace(/\n/g,'<br>');
+}
+
+function buildContextDisclosure(systemPrompt){
+  const escaped = systemPrompt.replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return `
+    <div class="context-disclosure">
+      <button class="context-toggle" onclick="this.nextElementSibling.classList.toggle('open');this.textContent=this.nextElementSibling.classList.contains('open')?'▲ Hide grounding context':'▼ See grounding context — what the AI knows'">▼ See grounding context — what the AI knows</button>
+      <div class="context-body">${escaped}</div>
+    </div>`;
+}
+
+const GEMINI_MODEL = 'gemini-3.6-flash';
+
+function extractGeminiText(data){
+  const parts = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts;
+  if(!parts) return '';
+  return parts.map(p => p.text || '').join('');
+}
+
+function geminiErrorMessage(data){
+  if(data.error && data.error.message) return data.error.message;
+  const reason = data.candidates && data.candidates[0] && data.candidates[0].finishReason;
+  if(reason && reason !== 'STOP') return 'Gemini stopped the reply (' + reason + '). Try a shorter follow-up.';
+  return 'API error — check the Gemini key and try again.';
+}
+
+async function callGemini(apiKey, systemPrompt, history){
+  const resp = await fetch(
+    'https://generativelanguage.googleapis.com/v1beta/models/' + GEMINI_MODEL + ':generateContent?key=' + encodeURIComponent(apiKey),
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: systemPrompt }] },
+        contents: history,
+        generationConfig: { maxOutputTokens: 1000 }
+      })
+    }
+  );
+  const data = await resp.json();
+  return { data, text: extractGeminiText(data) };
+}
+
+/* ── Main analyse call ── */
+async function analyse(){
+  const apiKey = document.getElementById('apiKeyInput').value.trim();
+  if(!apiKey){
+    alert('Enter your Gemini API key first — paste it in the top-right field.');
+    return;
+  }
+  const inp = getInputs();
+  const seg = currentMatch;
+  const btn = document.getElementById('analyseBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="btn-icon">⏳</span> Analysing...';
+
+  // Show input bar
+  document.getElementById('inputBar').style.display = 'flex';
+
+  // Build first user message
+  const userMsg = `Analyse this customer profile and tell me exactly what to do:\n\nRecency: ${inp.recency} days | Spend: $${inp.spend.toLocaleString()} | Purchases: ${inp.purchases} | Income: $${inp.income.toLocaleString()} | Campaigns accepted: ${inp.campaigns}/6\n\nMatched segment: ${seg.name}`;
+
+  // Show segment context card inside first user message
+  const segCtx = `
+    <div class="seg-context">
+      <div class="sc-item"><b>${inp.recency}d</b><span>recency</span></div>
+      <div class="sc-item"><b>$${inp.spend.toLocaleString()}</b><span>total spend</span></div>
+      <div class="sc-item"><b>${inp.purchases}</b><span>purchases</span></div>
+      <div class="sc-item"><b>$${inp.income.toLocaleString()}</b><span>income</span></div>
+      <div class="sc-item"><b>${inp.campaigns}/6</b><span>campaigns</span></div>
+      <div class="sc-item" style="color:${seg.hex}"><b>${seg.name}</b><span>matched segment</span></div>
+    </div>`;
+  addMsg('user', `Analyse this customer:${segCtx}`);
+
+  const systemPrompt = buildSystemPrompt(seg, inp);
+  conversationHistory = [{role:'user', parts:[{text:userMsg}]}];
+
+  const typing = addTyping();
+
+  try{
+    const { data, text } = await callGemini(apiKey, systemPrompt, conversationHistory);
+    removeTyping();
+
+    if(text){
+      conversationHistory.push({role:'model', parts:[{text}]});
+
+      const formatted = formatAgentText(text);
+      const contextDisc = buildContextDisclosure(systemPrompt);
+      addMsg('agent', `<p>${formatted}</p>`, contextDisc);
+      hasAnalysed = true;
+    } else {
+      addMsg('error', geminiErrorMessage(data));
+    }
+  } catch(e){
+    removeTyping();
+    addMsg('error', `Connection error: ${e.message}. Check the Gemini key and that you are on the free tier in Google AI Studio.`);
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<span class="btn-icon">⚡</span> Re-Analyse (profile changed)';
+}
+
+/* ── Follow-up ── */
+async function sendFollowUp(){
+  const apiKey = document.getElementById('apiKeyInput').value.trim();
+  if(!apiKey){
+    alert('Enter your Gemini API key first — paste it in the top-right field.');
+    return;
+  }
+  const input = document.getElementById('followUpInput');
+  const question = input.value.trim();
+  if(!question || !hasAnalysed) return;
+
+  input.value = '';
+  input.style.height = '44px';
+  document.getElementById('sendBtn').disabled = true;
+
+  addMsg('user', question);
+  conversationHistory.push({role:'user', parts:[{text:question}]});
+
+  const typing = addTyping();
+  const inp = getInputs();
+  const seg = currentMatch;
+
+  try{
+    const { data, text } = await callGemini(apiKey, buildSystemPrompt(seg, inp), conversationHistory);
+    removeTyping();
+
+    if(text){
+      conversationHistory.push({role:'model', parts:[{text}]});
+      addMsg('agent',`<p>${formatAgentText(text)}</p>`);
+    } else {
+      addMsg('error', geminiErrorMessage(data));
+    }
+  } catch(e){
+    removeTyping();
+    addMsg('error',`Error: ${e.message}`);
+  }
+
+  document.getElementById('sendBtn').disabled = false;
+}
+
+document.getElementById('analyseBtn').addEventListener('click', analyse);
+document.getElementById('sendBtn').addEventListener('click', sendFollowUp);
+
+document.getElementById('followUpInput').addEventListener('keydown', e=>{
+  if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendFollowUp(); }
+});
+
+// Auto-resize textarea
+document.getElementById('followUpInput').addEventListener('input', function(){
+  this.style.height = '44px';
+  this.style.height = Math.min(this.scrollHeight, 120)+'px';
+});
+</script>
+</body>
+</html>
