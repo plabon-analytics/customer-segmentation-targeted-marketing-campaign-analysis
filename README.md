@@ -14,6 +14,7 @@
 |---|---|
 | Interactive Dashboard | [View Live →](https://plabon-analytics.github.io/customer-segmentation-targeted-marketing-campaign-analysis/) |
 | Live Decision Tools | [Open Tools →](https://plabon-analytics.github.io/customer-segmentation-targeted-marketing-campaign-analysis/live-tools.html) |
+| Agentic Analyst System | [Use the System →](https://plabon-analytics.github.io/customer-segmentation-targeted-marketing-campaign-analysis/angentic-analyst.htmt) |
 
 ---
 
